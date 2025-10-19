@@ -264,7 +264,7 @@ local function showGiveItemList(categoryValue, filterTerm)
                     end
 
                     ExecuteCommand(('giveitem %s %s %d'):format(selectedPlayer.id, item.value, amount))
-                    openExtraMenu()
+                    showGiveItemList(categoryValue, currentItemFilters[categoryValue])
                 end
             }
         end
