@@ -79,14 +79,17 @@ end
 
 RegisterNUICallback('inputData', function(data, cb)
     cb(1)
-    lib.resetNuiFocus()
 
     local promise = input
     input = nil
 
-    if promise then
-        promise:resolve(data)
-    elseif lib and lib.print and lib.print.warn then
-        lib.print.warn('Received NUI input data with no pending promise')
+    if not promise then
+        if lib and lib.print and lib.print.debug then
+            lib.print.debug('Ignoring NUI input data with no pending promise')
+        end
+        return
     end
+
+    lib.resetNuiFocus()
+    promise:resolve(data)
 end)
