@@ -587,12 +587,34 @@ RegisterCommand('bagreset', function(_, args)
     TriggerServerEvent('wasabi_backpack:clearAttach', variant, gender)
     -- Reattach with config defaults, removing any override
     local data = (Config.BagVariants and Config.BagVariants[variant]) or {}
-    currentAttach = nil
-    RemoveBag()
+    local attachDefaults = selectAttachment(data.attach)
+    local bone = (attachDefaults and attachDefaults.bone) or defaultAttach.bone
+    local offX, offY, offZ = asVectorComponents(attachDefaults and attachDefaults.offset, defaultAttach.offset)
+    local rotX, rotY, rotZ = asVectorComponents(attachDefaults and attachDefaults.rotation, defaultAttach.rotation)
+
     equippedBagName = variant
     equippedModel = data.model or equippedModel
     equippedAttachment = data.attach
-    PutOnBag(equippedModel)
+
+    if bagEquipped and bagObj and DoesEntityExist(bagObj) then
+        currentAttach = {
+            bone = bone,
+            offX = offX, offY = offY, offZ = offZ,
+            rotX = rotX, rotY = rotY, rotZ = rotZ,
+        }
+        reattachUsingCurrent()
+    else
+        local previousModel = equippedModel
+        currentAttach = nil
+        RemoveBag()
+        equippedBagName = variant
+        equippedModel = data.model or previousModel
+        equippedAttachment = data.attach
+        PutOnBag(equippedModel)
+    end
+
+    saveState.pending = false
+    saveState.lastChange = GetGameTimer()
     if lib and lib.notify then lib.notify({ title = 'Backpack Edit', description = ('Override supprimÃ©: %s/%s'):format(variant, gender), type = 'inform' }) end
 end, false)
 
