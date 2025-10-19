@@ -585,14 +585,13 @@ RegisterCommand('bagreset', function(_, args)
     local gender = (model == `mp_f_freemode_01`) and 'female' or 'male'
     if genderArg == 'male' or genderArg == 'female' then gender = genderArg end
     TriggerServerEvent('wasabi_backpack:clearAttach', variant, gender)
-    -- Revert to config attach immediately
+    -- Reattach with config defaults, removing any override
     local data = (Config.BagVariants and Config.BagVariants[variant]) or {}
-    equippedAttachment = data.attach
-    -- Reattach with config
     currentAttach = nil
     RemoveBag()
     equippedBagName = variant
     equippedModel = data.model or equippedModel
+    equippedAttachment = data.attach
     PutOnBag(equippedModel)
     if lib and lib.notify then lib.notify({ title = 'Backpack Edit', description = ('Override supprimÃ©: %s/%s'):format(variant, gender), type = 'inform' }) end
 end, false)
