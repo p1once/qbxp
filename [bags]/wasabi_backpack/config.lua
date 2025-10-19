@@ -36,7 +36,8 @@ Config.BagVariants = {
         dropModel = `p_michael_backpack_s`,
         slots = 8,
         weight = 10000,
-        editYawAxis = 'y',
+        -- Use the default yaw axis (Z) so LEFT/RIGHT spin the bag horizontally
+        editYawAxis = 'z',
         attach = {
             male = {
                 bone = 24818, -- Spine
@@ -57,7 +58,8 @@ Config.BagVariants = {
         dropModel = `p_ld_heist_bag_s`,
         slots = 10,
         weight = 14000,
-        editYawAxis = 'y',
+        -- Horizontal spin also follows the default Z axis for this model
+        editYawAxis = 'z',
         attach = {
             male = {
                 bone = 24818, -- Spine
@@ -78,7 +80,8 @@ Config.BagVariants = {
         dropModel = `p_ld_heist_bag_s_pro2_s`,
         slots = 10,
         weight = 14000,
-        editYawAxis = 'y',
+        -- Horizontal spin also follows the default Z axis for this model
+        editYawAxis = 'z',
         attach = {
             male = {
                 bone = 24818, -- Spine
