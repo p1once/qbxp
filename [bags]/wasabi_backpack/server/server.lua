@@ -55,10 +55,26 @@ local function getInventoryModule()
     return inventoryModule
 end
 
+local function normaliseModel(model)
+    if not model then return nil end
+
+    if type(model) == 'string' then
+        return joaat(model)
+    end
+
+    return model
+end
+
 local function resolveBagModel(slot)
     if not slot or not Config.BagVariants then return nil end
 
     local metadata = slot.metadata
+
+    local modelFromMetadata = metadata and (metadata.dropModel or metadata.model)
+    if modelFromMetadata then
+        return normaliseModel(modelFromMetadata)
+    end
+
     local bagType = metadata and metadata.bagType or slot.name
     local variant = (bagType and Config.BagVariants[bagType]) or Config.BagVariants[slot.name]
     local defaultVariant = Config.BagVariants.backpack
@@ -68,7 +84,7 @@ local function resolveBagModel(slot)
         return `p_michael_backpack_s`
     end
 
-    return selectedVariant.dropModel or selectedVariant.model or `p_michael_backpack_s`
+    return normaliseModel(selectedVariant.dropModel or selectedVariant.model or `p_michael_backpack_s`)
 end
 
 local function refreshDropModel(dropId, model)
@@ -239,7 +255,9 @@ CreateThread(function()
             total_bags = total_bags + (ox_inventory:GetItem(payload.source, name, nil, true) or 0)
         end
 
-        if destination == 'newdrop' and move_type == 'drop' and payload.dropId and payload.fromSlot then
+        local isDrop = move_type == 'drop' and payload.dropId and payload.fromSlot
+
+        if (destination == 'newdrop' or destination == 'drop') and isDrop then
             local slot = payload.fromSlot
 
             if bagItemFilter[slot.name] then
