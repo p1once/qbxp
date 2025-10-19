@@ -13,6 +13,11 @@ Config.OneBagInInventory = true -- Allow only one bag in inventory?
 -- try setting this to 'x' or 'y' depending on your model/orientation.
 Config.EditYawAxis = 'z'
 
+-- Optional: override the yaw axis per bag variant by adding `editYawAxis`
+-- to the variant table (or within male/female attach tables). This is
+-- useful for models that are rotated 90 degrees by default where the
+-- horizontal spin corresponds to a different axis (commonly 'y').
+
 -- Default (legacy) storage for backpacks if no variant match
 Config.BackpackStorage = {
     slots = 8, -- Slots of backpack storage
@@ -29,6 +34,7 @@ Config.BagVariants = {
         dropModel = `p_michael_backpack_s`,
         slots = 8,
         weight = 10000,
+        editYawAxis = 'y',
         attach = {
             male = {
                 bone = 24818, -- Spine
@@ -49,6 +55,7 @@ Config.BagVariants = {
         dropModel = `p_ld_heist_bag_s`,
         slots = 10,
         weight = 14000,
+        editYawAxis = 'y',
         attach = {
             male = {
                 bone = 24818, -- Spine
@@ -69,6 +76,7 @@ Config.BagVariants = {
         dropModel = `p_ld_heist_bag_s_pro2_s`,
         slots = 10,
         weight = 14000,
+        editYawAxis = 'y',
         attach = {
             male = {
                 bone = 24818, -- Spine

@@ -51,8 +51,56 @@ local function asVectorComponents(value, default)
     return default.x, default.y, default.z
 end
 
--- Axis used for yaw editing via arrow keys
-local YAW_AXIS = (Config and Config.EditYawAxis) or 'z'
+-- Axis used for yaw editing via arrow keys (defaults to config value)
+local function sanitizeYawAxis(axis)
+    if axis == 'x' or axis == 'y' or axis == 'z' then
+        return axis
+    end
+end
+
+local function getDefaultYawAxis()
+    return sanitizeYawAxis(Config and Config.EditYawAxis) or 'z'
+end
+
+local currentYawAxis = getDefaultYawAxis()
+
+local function getYawAxis()
+    return currentYawAxis
+end
+
+local function resolveVariantYawAxis(variantData)
+    local model = ped and DoesEntityExist(ped) and GetEntityModel(ped)
+    local gender = (model == `mp_f_freemode_01`) and 'female' or 'male'
+
+    local function axisFromAttachment(attachment)
+        if not attachment then return nil end
+
+        if type(attachment) == 'table' and (attachment.male ~= nil or attachment.female ~= nil) then
+            attachment = attachment[gender] or attachment.default or attachment.any
+        end
+
+        if type(attachment) == 'table' then
+            return sanitizeYawAxis(attachment.editYawAxis)
+        end
+    end
+
+    local axis = axisFromAttachment(equippedAttachment)
+    if axis then return axis end
+
+    if not variantData then return nil end
+
+    axis = axisFromAttachment(variantData.attach) or variantData.editYawAxis
+    if type(axis) == 'table' then
+        axis = axis[gender] or axis.default or axis.any or axis[1]
+    end
+
+    return sanitizeYawAxis(axis)
+end
+
+local function refreshYawAxis()
+    local variantData = (Config and Config.BagVariants and equippedBagName) and Config.BagVariants[equippedBagName]
+    currentYawAxis = resolveVariantYawAxis(variantData) or getDefaultYawAxis()
+end
 
 
 
@@ -100,6 +148,7 @@ local function PutOnBag(model)
         return
     end
 
+    refreshYawAxis()
     local attach = selectAttachment(equippedAttachment) or defaultAttach
     local bone = attach.bone or defaultAttach.bone
     local offsetX, offsetY, offsetZ = asVectorComponents(attach.offset, defaultAttach.offset)
@@ -129,6 +178,7 @@ local function RemoveBag()
     equippedModel = nil
     equippedAttachment = nil
     currentAttach = nil
+    currentYawAxis = getDefaultYawAxis()
 end
 
 local function cleanupExistingBagProps()
@@ -185,6 +235,7 @@ end)
 
 lib.onCache('ped', function(value)
     ped = value
+    refreshYawAxis()
 end)
 
 lib.onCache('vehicle', function(value)
@@ -498,8 +549,8 @@ RegisterKeyMapping('bag_roty_inc', 'Bag rotation Y +', 'keyboard', 'PAGEUP')
 RegisterKeyMapping('bag_roty_dec', 'Bag rotation Y -', 'keyboard', 'PAGEDOWN')
 
 -- Generic yaw commands bound to arrow keys by default
-RegisterCommand('bag_yaw_inc', function() nudgeRotation(YAW_AXIS, 1) end, false)
-RegisterCommand('bag_yaw_dec', function() nudgeRotation(YAW_AXIS, -1) end, false)
+RegisterCommand('bag_yaw_inc', function() nudgeRotation(getYawAxis(), 1) end, false)
+RegisterCommand('bag_yaw_dec', function() nudgeRotation(getYawAxis(), -1) end, false)
 RegisterKeyMapping('bag_yaw_inc', 'Bag rotation Yaw + (arrow right)', 'keyboard', 'RIGHT')
 RegisterKeyMapping('bag_yaw_dec', 'Bag rotation Yaw - (arrow left)', 'keyboard', 'LEFT')
 
@@ -516,11 +567,11 @@ CreateThread(function()
 
             local used = false
             if IsDisabledControlPressed(0, 175) then -- Right Arrow
-                nudgeRotation(YAW_AXIS, 1)
+                nudgeRotation(getYawAxis(), 1)
                 used = true
             end
             if IsDisabledControlPressed(0, 174) then -- Left Arrow
-                nudgeRotation(YAW_AXIS, -1)
+                nudgeRotation(getYawAxis(), -1)
                 used = true
             end
 
@@ -595,6 +646,7 @@ RegisterCommand('bagreset', function(_, args)
     equippedBagName = variant
     equippedModel = data.model or equippedModel
     equippedAttachment = data.attach
+    refreshYawAxis()
 
     if bagEquipped and bagObj and DoesEntityExist(bagObj) then
         currentAttach = {
@@ -610,6 +662,7 @@ RegisterCommand('bagreset', function(_, args)
         equippedBagName = variant
         equippedModel = data.model or previousModel
         equippedAttachment = data.attach
+        refreshYawAxis()
         PutOnBag(equippedModel)
     end
 
