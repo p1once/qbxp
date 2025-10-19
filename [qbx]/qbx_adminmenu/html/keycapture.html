@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Key Capture</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: Arial, Helvetica, sans-serif;
+        user-select: none;
+        background: transparent;
+      }
+      .overlay {
+        position: absolute;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.45);
+      }
+      .panel {
+        background: #1f2937;
+        color: #fff;
+        padding: 16px 24px;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,.35);
+        min-width: 320px;
+        text-align: center;
+      }
+      .title {
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+      .desc {
+        font-size: 14px;
+        opacity: 0.9;
+      }
+      .key-hint {
+        margin-top: 10px;
+        font-size: 12px;
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="overlay" class="overlay" tabindex="0">
+      <div class="panel">
+        <div class="title">Press the desired key…</div>
+        <div class="desc">Press ESC to cancel</div>
+        <div class="key-hint" id="hint"></div>
+      </div>
+    </div>
+    <script>
+      const overlay = document.getElementById('overlay');
+      const hint = document.getElementById('hint');
+
+      function showOverlay(text) {
+        if (text) hint.textContent = text; else hint.textContent = '';
+        overlay.style.display = 'flex';
+        overlay.focus();
+      }
+
+      function hideOverlay() {
+        overlay.style.display = 'none';
+      }
+
+      function post(endpoint, data) {
+        fetch(`https://qbx_adminmenu/${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data || {})
+        }).catch(() => {});
+      }
+
+      function mapKey(e) {
+        const key = e.key;
+        const code = e.code;
+        // Normalize common keys to FiveM RegisterKeyMapping names
+        const specials = {
+          ' ': 'SPACE',
+          'Spacebar': 'SPACE',
+          'Space': 'SPACE',
+          'Enter': 'RETURN',
+          'Return': 'RETURN',
+          'Backspace': 'BACK',
+          'Delete': 'DELETE',
+          'Insert': 'INSERT',
+          'Home': 'HOME',
+          'End': 'END',
+          'PageUp': 'PAGEUP',
+          'PageDown': 'PAGEDOWN',
+          'ArrowUp': 'UP',
+          'ArrowDown': 'DOWN',
+          'ArrowLeft': 'LEFT',
+          'ArrowRight': 'RIGHT',
+          'Tab': 'TAB',
+          'CapsLock': 'CAPSLOCK',
+          'ScrollLock': 'SCROLL',
+          'PrintScreen': 'PRINTSCREEN',
+          'Pause': 'PAUSE',
+          'NumLock': 'NUMLOCK',
+        };
+
+        // F1..F24
+        if (/^F([1-9]|1\d|2[0-4])$/.test(key)) return key;
+
+        // Letters and digits
+        if (/^[a-zA-Z]$/.test(key)) return key.toUpperCase();
+        if (/^[0-9]$/.test(key)) return key;
+
+        // Numpad digits and operations via code
+        if (/^Numpad[0-9]$/.test(code)) {
+          return 'NUMPAD' + code.slice(-1);
+        }
+        switch (code) {
+          case 'NumpadAdd': return 'NUMPADADD';
+          case 'NumpadSubtract': return 'NUMPADSUBTRACT';
+          case 'NumpadMultiply': return 'NUMPADMULTIPLY';
+          case 'NumpadDivide': return 'NUMPADDIVIDE';
+          case 'NumpadDecimal': return 'NUMPADDECIMAL';
+          case 'NumpadEnter': return 'NUMPADENTER';
+          case 'NumpadComma': return 'NUMPADCOMMA';
+          case 'NumpadEqual': return 'NUMPADEQUALS';
+        }
+
+        // Modifier keys (left/right variants)
+        switch (code) {
+          case 'AltLeft': return 'LMENU';
+          case 'AltRight': return 'RMENU';
+          case 'ShiftLeft': return 'LSHIFT';
+          case 'ShiftRight': return 'RSHIFT';
+          case 'ControlLeft': return 'LCONTROL';
+          case 'ControlRight': return 'RCONTROL';
+        }
+
+        // Punctuation keys (US layout names)
+        switch (code) {
+          case 'Minus': return 'MINUS';
+          case 'Equal': return 'EQUALS';
+          case 'BracketLeft': return 'LBRACKET';
+          case 'BracketRight': return 'RBRACKET';
+          case 'Semicolon': return 'SEMICOLON';
+          case 'Quote': return 'APOSTROPHE';
+          case 'Backquote': return 'GRAVE';
+          case 'Backslash': return 'BACKSLASH';
+          case 'IntlBackslash': return 'BACKSLASH';
+          case 'Comma': return 'COMMA';
+          case 'Period': return 'PERIOD';
+          case 'Slash': return 'SLASH';
+        }
+
+        if (specials[key]) return specials[key];
+        return null; // unsupported
+      }
+
+      window.addEventListener('message', (e) => {
+        const data = e.data || {};
+        if (data.action === 'openKeyCapture') {
+          showOverlay(data.hint);
+        } else if (data.action === 'closeKeyCapture') {
+          hideOverlay();
+        }
+      });
+
+      window.addEventListener('keydown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.key === 'Escape') {
+          post('keyCaptured', { cancel: true });
+          hideOverlay();
+          return;
+        }
+        const mapped = mapKey(e);
+        if (!mapped) {
+          // Let Lua show invalid message
+          post('keyCaptured', { key: null });
+          hideOverlay();
+          return;
+        }
+        post('keyCaptured', { key: mapped });
+        hideOverlay();
+      });
+    </script>
+  </body>
+  </html>

@@ -1,0 +1,66 @@
+-----------------For support, scripts, and more----------------
+--------------- https://discord.gg/wasabiscripts  -------------
+---------------------------------------------------------------
+Config = {}
+
+Config.checkForUpdates = true -- Check for updates?
+
+Config.OneBagInInventory = true -- Allow only one bag in inventory?
+
+-- Default (legacy) storage for backpacks if no variant match
+Config.BackpackStorage = {
+    slots = 8, -- Slots of backpack storage
+    weight = 10000 -- Total weight for backpack
+}
+
+-- Multiple bag variants (name must match ox_inventory item name)
+-- Each variant can define its own model, slots and weight
+-- Optional: add an `attach` table with custom bone/offset/rotation overrides
+Config.BagVariants = {
+    backpack = {
+        label = 'Backpack',
+        model = `p_michael_backpack_s`,
+        dropModel = `p_michael_backpack_s`,
+        slots = 8,
+        weight = 10000,
+        attach = {
+            male = {
+                bone = 24818, -- Spine
+                offset = { x = 0.10, y = -0.17, z = -0.06 },
+                rotation = { x = 0.0, y = 90.0, z = 180.0 }
+            },
+            female = {
+                bone = 24818, -- Spine
+                offset = { x = 0.11, y = -0.18, z = -0.07 },
+                rotation = { x = 0.0, y = 90.0, z = 180.0 }
+            }
+        }
+    },
+
+    duffelbag = {
+        label = 'Duffel Bag',
+        model = `p_ld_heist_bag_s`,
+        dropModel = `p_ld_heist_bag_s`,
+        slots = 10,
+        weight = 14000,
+        attach = {
+            male = {
+                bone = 24818, -- Spine
+                offset = { x = 0.24, y = -0.30, z = -0.21 },
+                rotation = { x = 0.0, y = 90.0, z = 100.0 }
+            },
+            female = {
+                bone = 24818, -- Spine
+                offset = { x = 0.25, y = -0.31, z = -0.22 },
+                rotation = { x = 0.0, y = 90.0, z = 100.0 }
+            }
+        }
+    }
+}
+
+Strings = { -- Notification strings
+    action_incomplete = 'Action Incomplete',
+    one_backpack_only = 'You can only have 1x backpack!',
+    backpack_in_backpack = 'You can\'t place a backpack within another!',
+}
+
