@@ -68,6 +68,36 @@ local function getYawAxis()
     return currentYawAxis
 end
 
+local yawAxisCycle = { 'x', 'y', 'z' }
+
+local function cycleYawAxis()
+    local current = getYawAxis()
+    local nextAxis
+    local currentIndex
+
+    for i = 1, #yawAxisCycle do
+        if yawAxisCycle[i] == current then
+            currentIndex = i
+            break
+        end
+    end
+
+    if currentIndex then
+        nextAxis = yawAxisCycle[(currentIndex % #yawAxisCycle) + 1]
+    else
+        nextAxis = getDefaultYawAxis()
+    end
+
+    currentYawAxis = nextAxis
+
+    local axisLabel = currentYawAxis and currentYawAxis:upper() or '?'
+    local msg = ('Yaw axis: %s'):format(axisLabel)
+    print('bag_yaw_cycle -> '..msg)
+    if lib and lib.notify then
+        lib.notify({ title = 'Backpack Edit', description = msg, type = 'inform' })
+    end
+end
+
 local function resolveVariantYawAxis(variantData)
     local model = ped and DoesEntityExist(ped) and GetEntityModel(ped)
     local gender = (model == `mp_f_freemode_01`) and 'female' or 'male'
@@ -100,6 +130,16 @@ end
 local function refreshYawAxis()
     local variantData = (Config and Config.BagVariants and equippedBagName) and Config.BagVariants[equippedBagName]
     currentYawAxis = resolveVariantYawAxis(variantData) or getDefaultYawAxis()
+end
+
+local function resetYawAxis()
+    refreshYawAxis()
+    local axisLabel = currentYawAxis and currentYawAxis:upper() or '?'
+    local msg = ('Yaw axis reset (%s)'):format(axisLabel)
+    print('bag_yaw_reset -> '..msg)
+    if lib and lib.notify then
+        lib.notify({ title = 'Backpack Edit', description = msg, type = 'inform' })
+    end
 end
 
 
@@ -553,6 +593,18 @@ RegisterCommand('bag_yaw_inc', function() nudgeRotation(getYawAxis(), 1) end, fa
 RegisterCommand('bag_yaw_dec', function() nudgeRotation(getYawAxis(), -1) end, false)
 RegisterKeyMapping('bag_yaw_inc', 'Bag rotation Yaw + (arrow right)', 'keyboard', 'RIGHT')
 RegisterKeyMapping('bag_yaw_dec', 'Bag rotation Yaw - (arrow left)', 'keyboard', 'LEFT')
+
+RegisterCommand('bag_yaw_cycle', function()
+    if not editState.enabled then return end
+    cycleYawAxis()
+end, false)
+RegisterKeyMapping('bag_yaw_cycle', 'Cycle bag yaw axis (X/Y/Z)', 'keyboard', 'NUMPAD0')
+
+RegisterCommand('bag_yaw_reset', function()
+    if not editState.enabled then return end
+    resetYawAxis()
+end, false)
+RegisterKeyMapping('bag_yaw_reset', 'Reset bag yaw axis to default', 'keyboard', 'NUMPADENTER')
 
 -- Fallback: direct arrow-key handling for yaw while editing
 -- Some setups won't trigger RegisterKeyMapping for arrow keys.

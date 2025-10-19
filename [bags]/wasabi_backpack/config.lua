@@ -11,6 +11,8 @@ Config.OneBagInInventory = true -- Allow only one bag in inventory?
 -- Valid values: 'x', 'y', 'z'. Default is 'z'.
 -- If your bag rotates around the wrong axis when using arrow keys,
 -- try setting this to 'x' or 'y' depending on your model/orientation.
+-- While editing you can also press NUMPAD0 to cycle through the axes
+-- or NUMPADENTER to reset back to the configured default.
 Config.EditYawAxis = 'z'
 
 -- Optional: override the yaw axis per bag variant by adding `editYawAxis`
