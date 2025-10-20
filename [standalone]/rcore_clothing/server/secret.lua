@@ -5,27 +5,13 @@ L2_1 = 48
 L3_1 = 57
 L4_1 = 1
 for L5_1 = L2_1, L3_1, L4_1 do
-  L6_1 = table
-  L6_1 = L6_1.insert
-  L7_1 = L1_1
-  L8_1 = string
-  L8_1 = L8_1.char
-  L9_1 = L5_1
-  L8_1, L9_1 = L8_1(L9_1)
-  L6_1(L7_1, L8_1, L9_1)
+  table.insert(L1_1, string.char(L5_1))
 end
 L2_1 = 97
 L3_1 = 122
 L4_1 = 1
 for L5_1 = L2_1, L3_1, L4_1 do
-  L6_1 = table
-  L6_1 = L6_1.insert
-  L7_1 = L1_1
-  L8_1 = string
-  L8_1 = L8_1.char
-  L9_1 = L5_1
-  L8_1, L9_1 = L8_1(L9_1)
-  L6_1(L7_1, L8_1, L9_1)
+  table.insert(L1_1, string.char(L5_1))
 end
 function L2_1(A0_2)
   local L1_2, L2_2, L3_2, L4_2
