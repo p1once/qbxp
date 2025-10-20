@@ -27,6 +27,7 @@ const state = {
     type: null,
   },
   cartVisible: false,
+  dragOffset: { x: 0, y: 0 },
 };
 
 const componentMap = new Map([
@@ -203,12 +204,116 @@ function fetchNui(event, data = {}) {
   });
 }
 
+function setDragOffsets(x, y) {
+  state.dragOffset.x = x;
+  state.dragOffset.y = y;
+  document.body.style.setProperty('--drag-x', `${x}px`);
+  document.body.style.setProperty('--drag-y', `${y}px`);
+}
+
+function resetDragPosition() {
+  setDragOffsets(0, 0);
+}
+
+let dragSession = null;
+let dragListenersInitialized = false;
+
+function handleDragPointerMove(event) {
+  if (!dragSession || event.pointerId !== dragSession.pointerId) {
+    return;
+  }
+  const deltaX = event.clientX - dragSession.startX;
+  const deltaY = event.clientY - dragSession.startY;
+  setDragOffsets(dragSession.baseX + deltaX, dragSession.baseY + deltaY);
+}
+
+function finishDrag(event) {
+  if (!dragSession) {
+    return;
+  }
+  if (event && event.pointerId !== dragSession.pointerId) {
+    return;
+  }
+  if (dragSession.handle && dragSession.handle.releasePointerCapture) {
+    try {
+      dragSession.handle.releasePointerCapture(dragSession.pointerId);
+    } catch (err) {
+      // no-op if pointer capture cannot be released
+    }
+  }
+  window.removeEventListener('pointermove', handleDragPointerMove);
+  window.removeEventListener('pointerup', finishDrag);
+  window.removeEventListener('pointercancel', finishDrag);
+  document.body.classList.remove('dragging-app');
+  dragSession = null;
+}
+
+function handleDragPointerDown(event) {
+  if (!state.visible) {
+    return;
+  }
+  if (event.pointerType === 'mouse' && event.button !== 0) {
+    return;
+  }
+  if (event.target.closest('button, [role="button"], input, select, textarea, a')) {
+    return;
+  }
+  const container = document.getElementById('appearance-app');
+  if (!container || container.classList.contains('hidden')) {
+    return;
+  }
+  event.preventDefault();
+  if (dragSession) {
+    finishDrag();
+  }
+  const handle = event.currentTarget;
+  dragSession = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    baseX: state.dragOffset.x,
+    baseY: state.dragOffset.y,
+    handle,
+  };
+  if (handle && handle.setPointerCapture) {
+    try {
+      handle.setPointerCapture(event.pointerId);
+    } catch (err) {
+      // ignore if pointer capture is not supported
+    }
+  }
+  document.body.classList.add('dragging-app');
+  window.addEventListener('pointermove', handleDragPointerMove);
+  window.addEventListener('pointerup', finishDrag);
+  window.addEventListener('pointercancel', finishDrag);
+}
+
+function setupDragControls() {
+  if (dragListenersInitialized) {
+    return;
+  }
+  const handle = document.getElementById('header1');
+  if (!handle) {
+    return;
+  }
+  handle.addEventListener('pointerdown', handleDragPointerDown);
+  handle.addEventListener('dblclick', (event) => {
+    if (event.target.closest('button, [role="button"], input, select, textarea, a')) {
+      return;
+    }
+    finishDrag();
+    resetDragPosition();
+  });
+  dragListenersInitialized = true;
+}
+
 function showApp() {
   if (state.visible) return;
   state.visible = true;
   resetFilters();
   resetCart();
   state.cartVisible = false;
+  document.body.classList.add('app-visible');
   document.body.classList.remove('compact-layout', 'peek-mode');
   const app = document.getElementById('appearance-app');
   if (app) {
@@ -230,7 +335,9 @@ function showApp() {
 
 function hideApp() {
   state.visible = false;
-  document.body.classList.remove('compact-layout', 'peek-mode');
+  finishDrag();
+  document.body.classList.remove('dragging-app');
+  document.body.classList.remove('compact-layout', 'peek-mode', 'app-visible');
   const app = document.getElementById('appearance-app');
   if (app) {
     app.classList.add('hidden');
@@ -1667,4 +1774,5 @@ window.addEventListener('message', (event) => {
 
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
+  setupDragControls();
 });

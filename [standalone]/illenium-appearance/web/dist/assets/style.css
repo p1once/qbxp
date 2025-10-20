@@ -28,9 +28,17 @@ body {
   background: transparent;
   color: var(--text-primary);
   transition: padding 0.3s ease;
+  --drag-x: 0px;
+  --drag-y: 0px;
+  --peek-offset-x: 0px;
+  --peek-offset-y: 0px;
 }
 
 body::before {
+  content: none;
+}
+
+body.app-visible::before {
   content: '';
   position: fixed;
   top: 0;
@@ -39,10 +47,11 @@ body::before {
   width: min(52vw, 680px);
   background: radial-gradient(circle at top right, rgba(29, 46, 74, 0.88), rgba(9, 13, 20, 0.92));
   pointer-events: none;
-  transition: opacity 0.3s ease, width 0.3s ease;
+  transition: opacity 0.3s ease, width 0.3s ease, transform 0.3s ease;
+  transform: translate(var(--drag-x, 0px), var(--drag-y, 0px));
 }
 
-body.peek-mode::before {
+body.app-visible.peek-mode::before {
   opacity: 0;
 }
 
@@ -61,13 +70,14 @@ body.peek-mode::before {
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
+  transform: translate(calc(var(--drag-x, 0px) + var(--peek-offset-x, 0px)), calc(var(--drag-y, 0px) + var(--peek-offset-y, 0px)));
 }
 
 body.compact-layout {
   padding: min(3vh, 36px) min(3vw, 48px);
 }
 
-body.compact-layout::before {
+body.app-visible.compact-layout::before {
   width: min(44vw, 560px);
 }
 
@@ -75,8 +85,12 @@ body.compact-layout .leaderboard {
   width: min(38vw, 720px);
 }
 
+body.peek-mode {
+  --peek-offset-x: calc(100% + min(4vw, 64px));
+  --peek-offset-y: 0px;
+}
+
 body.peek-mode .leaderboard {
-  transform: translateX(calc(100% + min(4vw, 64px)));
   opacity: 0;
   pointer-events: none;
 }
@@ -116,7 +130,7 @@ body.peek-mode .peek-control {
     padding: 32px;
   }
 
-  body::before {
+  body.app-visible::before {
     width: 100%;
   }
 
@@ -143,14 +157,27 @@ body.peek-mode .peek-control {
     width: 100%;
   }
 
-  body.peek-mode .leaderboard {
-    transform: translateY(calc(100% + 24px));
+  body.peek-mode {
+    --peek-offset-x: 0px;
+    --peek-offset-y: calc(100% + 24px);
   }
 
   .peek-control {
     right: 16px;
     bottom: 24px;
   }
+}
+
+.drag-handle {
+  cursor: grab;
+}
+
+body.dragging-app .drag-handle {
+  cursor: grabbing;
+}
+
+.drag-handle button {
+  cursor: pointer;
 }
 
 #header1 {
