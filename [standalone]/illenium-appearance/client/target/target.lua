@@ -1,5 +1,9 @@
 if not Config.UseTarget then return end
 
+local function usingRCoreClothing()
+    return Config.UseRCoreClothing and GetResourceState and GetResourceState('rcore_clothing') == 'started'
+end
+
 local TargetPeds = {
     Store = {},
     ClothingRoom = {},
@@ -118,6 +122,11 @@ local function SetupClothingRoomTargets()
     for k, v in pairs(Config.ClothingRooms) do
         local targetConfig = Config.TargetConfig["clothingroom"]
         local action = function()
+            if usingRCoreClothing() then
+                TriggerEvent('rcore_clothing:openChangingRoom')
+                return
+            end
+
             local outfits = GetPlayerJobOutfits(v.job)
             TriggerEvent("illenium-appearance:client:openJobOutfitsMenu", outfits)
         end

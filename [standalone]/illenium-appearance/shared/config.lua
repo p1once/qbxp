@@ -12,6 +12,10 @@ Config.ChargePerTattoo = true -- Charge players per tattoo. Config.TattooCost wi
 -- Only set this to true if you're using rcore_tattoos
 Config.RCoreTattoosCompatibility = false
 
+Config.UseRCoreClothing = true -- When enabled and rcore_clothing is running, clothing menus forward to rcore
+Config.RCoreClothingShop = "binco" -- Shop name configured inside rcore_clothing to use for generic clothing access
+Config.RCoreClothingShopConfig = nil -- Optional table passed to rcore_clothing:requestOpenClothingShop for custom structure/modifiers
+
 Config.AsynchronousLoading = false -- Change this to false if you want the NUI data to load before displaying the appearance UI
 
 Config.UseTarget = false

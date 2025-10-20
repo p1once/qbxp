@@ -1,5 +1,9 @@
 if Config.UseTarget then return end
 
+local function usingRCoreClothing()
+    return Config.UseRCoreClothing and GetResourceState and GetResourceState('rcore_clothing') == 'started'
+end
+
 local currentZone = nil
 
 local Zones = {
@@ -150,9 +154,13 @@ local function ZonesLoop()
             sleep = 5
             if IsControlJustReleased(0, 38) then
                 if currentZone.name == "clothingRoom" then
-                    local clothingRoom = Config.ClothingRooms[currentZone.index]
-                    local outfits = GetPlayerJobOutfits(clothingRoom.job)
-                    TriggerEvent("illenium-appearance:client:openJobOutfitsMenu", outfits)
+                    if usingRCoreClothing() then
+                        TriggerEvent('rcore_clothing:openChangingRoom')
+                    else
+                        local clothingRoom = Config.ClothingRooms[currentZone.index]
+                        local outfits = GetPlayerJobOutfits(clothingRoom.job)
+                        TriggerEvent("illenium-appearance:client:openJobOutfitsMenu", outfits)
+                    end
                 elseif currentZone.name == "playerOutfitRoom" then
                     local outfitRoom = Config.PlayerOutfitRooms[currentZone.index]
                     OpenOutfitRoom(outfitRoom)
@@ -186,6 +194,11 @@ AddEventHandler("onResourceStop", function(resource)
 end)
 
 RegisterNetEvent("illenium-appearance:client:OpenClothingRoom", function()
+    if usingRCoreClothing() then
+        TriggerEvent('rcore_clothing:openChangingRoom')
+        return
+    end
+
     local clothingRoom = Config.ClothingRooms[currentZone.index]
     local outfits = GetPlayerJobOutfits(clothingRoom.job)
     TriggerEvent("illenium-appearance:client:openJobOutfitsMenu", outfits)

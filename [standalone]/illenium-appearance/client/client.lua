@@ -1,6 +1,25 @@
 local client = client
 local reloadSkinTimer = GetGameTimer()
 
+local function usingRCoreClothing()
+    return Config.UseRCoreClothing and GetResourceState and GetResourceState('rcore_clothing') == 'started'
+end
+
+local function openRCoreClothing(isPedMenu)
+    if not usingRCoreClothing() then
+        return false
+    end
+
+    if isPedMenu then
+        TriggerEvent('rcore_clothing:openSkinMenu')
+    else
+        local shopName = Config.RCoreClothingShop or 'binco'
+        TriggerServerEvent('rcore_clothing:requestOpenClothingShop', shopName, Config.RCoreClothingShopConfig)
+    end
+
+    return true
+end
+
 local function LoadPlayerUniform(reset)
     if reset then
         TriggerServerEvent("illenium-appearance:server:syncUniform", nil)
@@ -167,6 +186,10 @@ function OpenShop(config, isPedMenu, shopType)
 end
 
 local function OpenClothingShop(isPedMenu)
+    if openRCoreClothing(isPedMenu) then
+        return
+    end
+
     local config = GetDefaultConfig()
     config.components = true
     config.props = true
@@ -638,6 +661,11 @@ RegisterNetEvent("illenium-appearance:client:openClothingShopMenu", function(isP
     if type(isPedMenu) == "table" then
         isPedMenu = false
     end
+
+    if openRCoreClothing(isPedMenu) then
+        return
+    end
+
     OpenMenu(isPedMenu, "default")
 end)
 
