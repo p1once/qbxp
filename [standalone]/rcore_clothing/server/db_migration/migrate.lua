@@ -146,14 +146,34 @@ L0_1[10] = L10_1
 L0_1[11] = L11_1
 L0_1[12] = L12_1
 function L1_1()
-  local L0_2, L1_2
+  local L0_2, L1_2, L2_2, L3_2, L4_2
   L0_2 = MySQL
   L0_2 = L0_2.Sync
   L0_2 = L0_2.fetchAll
   L1_2 = "SHOW TABLES LIKE 'rcore_clothing_items'"
   L0_2 = L0_2(L1_2)
   L1_2 = #L0_2
-  L1_2 = L1_2 > 0
+  if L1_2 > 0 then
+    L1_2 = MySQL
+    L1_2 = L1_2.Sync
+    L1_2 = L1_2.fetchScalar
+    L2_2 = "SELECT COUNT(*) FROM rcore_clothing_items"
+    L3_2 = {}
+    L1_2 = L1_2(L2_2, L3_2)
+    if L1_2 and 0 < L1_2 then
+      L2_2 = MySQL
+      L2_2 = L2_2.Sync
+      L2_2 = L2_2.fetchScalar
+      L3_2 = "SELECT COUNT(*) FROM rcore_clothing_item_shops"
+      L4_2 = {}
+      L2_2 = L2_2(L3_2, L4_2)
+      if L2_2 and 0 < L2_2 then
+        L3_2 = true
+        return L3_2
+      end
+    end
+  end
+  L1_2 = false
   return L1_2
 end
 function L2_1(A0_2)

@@ -194,15 +194,16 @@ function L2_1(A0_2, A1_2, A2_2)
   L6_2 = L3_2
   L5_2, L6_2, L7_2, L8_2 = L5_2(L6_2)
   for L9_2, L10_2 in L5_2, L6_2, L7_2, L8_2 do
-    L11_2 = table
-    L11_2 = L11_2.insert
-    L12_2 = L4_2
-    L13_2 = FormatClothingItem
-    L14_2 = A2_2.showAll
-    L15_2 = L10_2
-    L16_2 = A0_2
-    L13_2, L14_2, L15_2, L16_2 = L13_2(L14_2, L15_2, L16_2)
-    L11_2(L12_2, L13_2, L14_2, L15_2, L16_2)
+    L11_2 = FormatClothingItem
+    L12_2 = A2_2.showAll
+    L13_2 = L10_2
+    L14_2 = A0_2
+    L11_2 = L11_2(L12_2, L13_2, L14_2)
+    L12_2 = table
+    L12_2 = L12_2.insert
+    L13_2 = L4_2
+    L14_2 = L11_2
+    L12_2(L13_2, L14_2)
   end
   L5_2 = #L4_2
   if L5_2 > 0 then
@@ -210,175 +211,188 @@ function L2_1(A0_2, A1_2, A2_2)
     if 8 == L5_2 then
       L5_2 = A2_2.lastId
       if L5_2 < 1 then
-        L5_2 = table
-        L5_2 = L5_2.insert
-        L6_2 = L4_2
-        L7_2 = 1
-        L8_2 = GetEmptyUndershirt
-        L9_2 = A1_2
-        L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2 = L8_2(L9_2)
-        L5_2(L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2)
+        L5_2 = GetEmptyUndershirt
+        L6_2 = A1_2
+        L5_2 = L5_2(L6_2)
+        L6_2 = table
+        L6_2 = L6_2.insert
+        L7_2 = L4_2
+        L8_2 = 1
+        L9_2 = L5_2
+        L6_2(L7_2, L8_2, L9_2)
       end
     end
     L5_2 = A2_2.componentId
     if 6 == L5_2 then
       L5_2 = A2_2.lastId
       if L5_2 < 1 then
-        L5_2 = table
-        L5_2 = L5_2.insert
-        L6_2 = L4_2
-        L7_2 = 1
-        L8_2 = GetEmptyShoes
-        L9_2 = A1_2
-        L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2 = L8_2(L9_2)
-        L5_2(L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2)
+        L5_2 = GetEmptyShoes
+        L6_2 = A1_2
+        L5_2 = L5_2(L6_2)
+        L6_2 = table
+        L6_2 = L6_2.insert
+        L7_2 = L4_2
+        L8_2 = 1
+        L9_2 = L5_2
+        L6_2(L7_2, L8_2, L9_2)
       end
     end
     L5_2 = A2_2.componentId
     if 4 == L5_2 then
       L5_2 = A2_2.lastId
       if L5_2 < 1 then
-        L5_2 = table
-        L5_2 = L5_2.insert
-        L6_2 = L4_2
-        L7_2 = 1
-        L8_2 = GetEmptyPants
-        L9_2 = A1_2
-        L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2 = L8_2(L9_2)
-        L5_2(L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2)
+        L5_2 = GetEmptyPants
+        L6_2 = A1_2
+        L5_2 = L5_2(L6_2)
+        L6_2 = table
+        L6_2 = L6_2.insert
+        L7_2 = L4_2
+        L8_2 = 1
+        L9_2 = L5_2
+        L6_2(L7_2, L8_2, L9_2)
       end
     end
     L5_2 = A2_2.componentId
     if 1 == L5_2 then
       L5_2 = A2_2.lastId
       if L5_2 < 1 then
-        L5_2 = table
-        L5_2 = L5_2.insert
-        L6_2 = L4_2
-        L7_2 = 1
-        L8_2 = GetEmptyMask
-        L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2 = L8_2()
-        L5_2(L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2)
+        L5_2 = GetEmptyMask
+        L5_2 = L5_2()
+        L6_2 = table
+        L6_2 = L6_2.insert
+        L7_2 = L4_2
+        L8_2 = 1
+        L9_2 = L5_2
+        L6_2(L7_2, L8_2, L9_2)
       end
     end
     L5_2 = A2_2.componentId
     if 7 == L5_2 then
       L5_2 = A2_2.lastId
       if L5_2 < 1 then
-        L5_2 = table
-        L5_2 = L5_2.insert
-        L6_2 = L4_2
-        L7_2 = 1
-        L8_2 = GetEmptyNeckwear
-        L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2 = L8_2()
-        L5_2(L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2)
+        L5_2 = GetEmptyNeckwear
+        L5_2 = L5_2()
+        L6_2 = table
+        L6_2 = L6_2.insert
+        L7_2 = L4_2
+        L8_2 = 1
+        L9_2 = L5_2
+        L6_2(L7_2, L8_2, L9_2)
       end
     end
     L5_2 = A2_2.componentId
     if 11 == L5_2 then
       L5_2 = A2_2.lastId
       if L5_2 < 1 then
-        L5_2 = table
-        L5_2 = L5_2.insert
-        L6_2 = L4_2
-        L7_2 = 1
-        L8_2 = GetEmptyTorso
-        L9_2 = A1_2
-        L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2 = L8_2(L9_2)
-        L5_2(L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2)
+        L5_2 = GetEmptyTorso
+        L6_2 = A1_2
+        L5_2 = L5_2(L6_2)
+        L6_2 = table
+        L6_2 = L6_2.insert
+        L7_2 = L4_2
+        L8_2 = 1
+        L9_2 = L5_2
+        L6_2(L7_2, L8_2, L9_2)
       end
     end
     L5_2 = A2_2.componentId
     if 9 == L5_2 then
       L5_2 = A2_2.lastId
       if L5_2 < 1 then
-        L5_2 = table
-        L5_2 = L5_2.insert
-        L6_2 = L4_2
-        L7_2 = 1
-        L8_2 = GetEmptyVest
-        L9_2 = A1_2
-        L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2 = L8_2(L9_2)
-        L5_2(L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2)
+        L5_2 = GetEmptyVest
+        L6_2 = A1_2
+        L5_2 = L5_2(L6_2)
+        L6_2 = table
+        L6_2 = L6_2.insert
+        L7_2 = L4_2
+        L8_2 = 1
+        L9_2 = L5_2
+        L6_2(L7_2, L8_2, L9_2)
       end
     end
     L5_2 = A2_2.componentId
     if 5 == L5_2 then
       L5_2 = A2_2.lastId
       if L5_2 < 1 then
-        L5_2 = table
-        L5_2 = L5_2.insert
-        L6_2 = L4_2
-        L7_2 = 1
-        L8_2 = GetEmptyBag
-        L9_2 = A1_2
-        L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2 = L8_2(L9_2)
-        L5_2(L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2)
+        L5_2 = GetEmptyBag
+        L6_2 = A1_2
+        L5_2 = L5_2(L6_2)
+        L6_2 = table
+        L6_2 = L6_2.insert
+        L7_2 = L4_2
+        L8_2 = 1
+        L9_2 = L5_2
+        L6_2(L7_2, L8_2, L9_2)
       end
     end
     L5_2 = A2_2.componentId
     if 100 == L5_2 then
       L5_2 = A2_2.lastId
       if L5_2 < 1 then
-        L5_2 = table
-        L5_2 = L5_2.insert
-        L6_2 = L4_2
-        L7_2 = 1
-        L8_2 = GetEmptyHat
-        L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2 = L8_2()
-        L5_2(L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2)
+        L5_2 = GetEmptyHat
+        L5_2 = L5_2()
+        L6_2 = table
+        L6_2 = L6_2.insert
+        L7_2 = L4_2
+        L8_2 = 1
+        L9_2 = L5_2
+        L6_2(L7_2, L8_2, L9_2)
       end
     end
     L5_2 = A2_2.componentId
     if 107 == L5_2 then
       L5_2 = A2_2.lastId
       if L5_2 < 1 then
-        L5_2 = table
-        L5_2 = L5_2.insert
-        L6_2 = L4_2
-        L7_2 = 1
-        L8_2 = GetEmptyBracelet
-        L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2 = L8_2()
-        L5_2(L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2)
+        L5_2 = GetEmptyBracelet
+        L5_2 = L5_2()
+        L6_2 = table
+        L6_2 = L6_2.insert
+        L7_2 = L4_2
+        L8_2 = 1
+        L9_2 = L5_2
+        L6_2(L7_2, L8_2, L9_2)
       end
     end
     L5_2 = A2_2.componentId
     if 106 == L5_2 then
       L5_2 = A2_2.lastId
       if L5_2 < 1 then
-        L5_2 = table
-        L5_2 = L5_2.insert
-        L6_2 = L4_2
-        L7_2 = 1
-        L8_2 = GetEmptyWatches
-        L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2 = L8_2()
-        L5_2(L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2)
+        L5_2 = GetEmptyWatches
+        L5_2 = L5_2()
+        L6_2 = table
+        L6_2 = L6_2.insert
+        L7_2 = L4_2
+        L8_2 = 1
+        L9_2 = L5_2
+        L6_2(L7_2, L8_2, L9_2)
       end
     end
     L5_2 = A2_2.componentId
     if 102 == L5_2 then
       L5_2 = A2_2.lastId
       if L5_2 < 1 then
-        L5_2 = table
-        L5_2 = L5_2.insert
-        L6_2 = L4_2
-        L7_2 = 1
-        L8_2 = GetEmptyEars
-        L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2 = L8_2()
-        L5_2(L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2)
+        L5_2 = GetEmptyEars
+        L5_2 = L5_2()
+        L6_2 = table
+        L6_2 = L6_2.insert
+        L7_2 = L4_2
+        L8_2 = 1
+        L9_2 = L5_2
+        L6_2(L7_2, L8_2, L9_2)
       end
     end
     L5_2 = A2_2.componentId
     if 101 == L5_2 then
       L5_2 = A2_2.lastId
       if L5_2 < 1 then
-        L5_2 = table
-        L5_2 = L5_2.insert
-        L6_2 = L4_2
-        L7_2 = 1
-        L8_2 = GetEmptyGlasses
-        L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2 = L8_2()
-        L5_2(L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2, L16_2)
+        L5_2 = GetEmptyGlasses
+        L5_2 = L5_2()
+        L6_2 = table
+        L6_2 = L6_2.insert
+        L7_2 = L4_2
+        L8_2 = 1
+        L9_2 = L5_2
+        L6_2(L7_2, L8_2, L9_2)
       end
     end
   end
