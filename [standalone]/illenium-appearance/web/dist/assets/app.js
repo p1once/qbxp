@@ -26,6 +26,7 @@ const state = {
     items: [],
     type: null,
   },
+  cartVisible: false,
 };
 
 const componentMap = new Map([
@@ -125,11 +126,14 @@ function resetCart() {
   state.cart = [];
   state.cartTotals.items = 0;
   state.cartTotals.cost = 0;
+  state.cartVisible = false;
   updateCheckoutButton();
   const cartPanel = document.getElementById('cart-panel');
   if (cartPanel) {
     cartPanel.innerHTML = '';
+    cartPanel.classList.add('collapsed');
   }
+  updateCartToggleButton();
 }
 
 function getCategoriesFromItems(items) {
@@ -204,6 +208,7 @@ function showApp() {
   state.visible = true;
   resetFilters();
   resetCart();
+  state.cartVisible = false;
   document.getElementById('appearance-app').classList.remove('hidden');
 }
 
@@ -212,11 +217,14 @@ function hideApp() {
   document.getElementById('appearance-app').classList.add('hidden');
   document.getElementById('clothemain').innerHTML = '';
   document.getElementById('panel-extra').innerHTML = '';
+  document.getElementById('modalfunc').classList.add('hidden');
+  document.getElementById('modalfunc').innerHTML = '';
   itemRegistry.clear();
   resetFilters();
   resetCart();
   state.storeCache.items = [];
   state.storeCache.type = null;
+  state.cartVisible = false;
 }
 
 function syncMaps() {
@@ -306,6 +314,8 @@ function renderSection(section) {
       break;
     default:
       titleBottom.textContent = 'Fine tune hair, overlays and facial features';
+      state.cartVisible = false;
+      updateCartToggleButton();
       renderAppearanceItems(buildAppearanceItems());
       break;
   }
@@ -830,10 +840,13 @@ function renderStore(items, type) {
 
   body.appendChild(grid);
   calculateCartTotals();
-  body.appendChild(renderCartPanel());
+  const cartPanel = renderCartPanel();
+  cartPanel.classList.toggle('collapsed', !state.cartVisible);
+  body.appendChild(cartPanel);
   layout.appendChild(body);
   container.appendChild(layout);
   updateCheckoutButton();
+  updateCartToggleButton();
 }
 
 function createStoreControls(items, type) {
@@ -1142,6 +1155,8 @@ function updateCartPanel(target) {
   footer.appendChild(totalLabel);
   footer.appendChild(totalValue);
   panel.appendChild(footer);
+  panel.classList.toggle('collapsed', !state.cartVisible);
+  updateCartToggleButton();
 }
 
 function isInCart(itemId) {
@@ -1250,15 +1265,43 @@ function refreshVariantSummary(parentId) {
 }
 
 function updateCheckoutButton() {
-  const button = document.getElementById('btn-save');
+  const button = document.getElementById('save_clothe');
   if (!button) return;
   if (state.cartTotals.items > 0) {
     button.textContent = `Checkout ${formatCurrency(state.cartTotals.cost)}`;
     button.classList.add('has-cart');
   } else {
-    button.textContent = 'Save';
+    button.textContent = 'Save Current';
     button.classList.remove('has-cart');
   }
+}
+
+function ensureCartPanelVisibility() {
+  const panel = document.getElementById('cart-panel');
+  if (panel) {
+    panel.classList.toggle('collapsed', !state.cartVisible);
+  }
+}
+
+function updateCartToggleButton() {
+  const viewButton = document.getElementById('viewcart');
+  if (viewButton) {
+    viewButton.textContent = state.cartVisible ? 'Hide Cart' : 'View Cart';
+  }
+}
+
+function toggleCartPanel(force) {
+  if (state.section === 'appearance') {
+    handleCartUpdate();
+    return;
+  }
+  if (typeof force === 'boolean') {
+    state.cartVisible = force;
+  } else {
+    state.cartVisible = !state.cartVisible;
+  }
+  ensureCartPanelVisibility();
+  updateCartToggleButton();
 }
 
 function handleRangeInput(event) {
@@ -1415,13 +1458,139 @@ function handleExit() {
   fetchNui('appearance_exit');
 }
 
+function handleCartUpdate() {
+  state.cartVisible = true;
+  updateCartToggleButton();
+  renderSection('clothing');
+}
+
+function closeModal() {
+  const modal = document.getElementById('modalfunc');
+  if (!modal) return;
+  modal.classList.add('hidden');
+  modal.innerHTML = '';
+}
+
+function openRemoveClothesModal() {
+  const modal = document.getElementById('modalfunc');
+  if (!modal) return;
+  modal.innerHTML = `
+    <div class="modal__content">
+      <h2 class="modal__title">Remove Clothes</h2>
+      <p class="modal__description">Choose which wardrobe preset to clear.</p>
+      <div class="modal__actions">
+        <button data-remove="head">Head</button>
+        <button data-remove="body">Body</button>
+        <button data-remove="bottom">Bottom</button>
+        <button class="danger" data-dismiss="true">Close</button>
+      </div>
+    </div>`;
+  modal.classList.remove('hidden');
+  modal.querySelectorAll('[data-remove]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      const type = event.currentTarget.dataset.remove;
+      if (!type) return;
+      fetchNui('appearance_remove_clothes', type);
+      closeModal();
+    });
+  });
+  const dismiss = modal.querySelector('[data-dismiss]');
+  if (dismiss) {
+    dismiss.addEventListener('click', closeModal);
+  }
+}
+
+async function openOutfitModal() {
+  const modal = document.getElementById('modalfunc');
+  if (!modal) return;
+  modal.innerHTML = `
+    <div class="modal__content">
+      <h2 class="modal__title">Saved Outfits</h2>
+      <p class="modal__description">Gathering your saved looks...</p>
+      <div class="modal__actions">
+        <button data-dismiss="true">Close</button>
+      </div>
+    </div>`;
+  modal.classList.remove('hidden');
+  const dismiss = modal.querySelector('[data-dismiss]');
+  if (dismiss) {
+    dismiss.addEventListener('click', closeModal);
+  }
+
+  try {
+    const outfits = await fetchNui('appearance_get_outfits');
+    const description = modal.querySelector('.modal__description');
+    if (!outfits || !outfits.length) {
+      description.textContent = 'You do not have any saved outfits yet.';
+      return;
+    }
+
+    description.textContent = 'Preview your stored outfits and pick one to apply instantly.';
+    const list = document.createElement('ul');
+    list.className = 'modal__list';
+
+    outfits.forEach((outfit) => {
+      const item = document.createElement('li');
+      const info = document.createElement('div');
+      info.className = 'modal__list-info';
+      const title = document.createElement('strong');
+      title.textContent = outfit.name || 'Outfit';
+      const subtitle = document.createElement('span');
+      subtitle.textContent = outfit.model || 'Current model';
+      info.appendChild(title);
+      info.appendChild(subtitle);
+
+      const action = document.createElement('button');
+      action.textContent = 'Wear';
+      action.addEventListener('click', () => applyOutfit(outfit));
+
+      item.appendChild(info);
+      item.appendChild(action);
+      list.appendChild(item);
+    });
+
+    const content = modal.querySelector('.modal__content');
+    content.insertBefore(list, content.querySelector('.modal__actions'));
+  } catch (error) {
+    console.error('Failed to load outfits', error);
+    const description = modal.querySelector('.modal__description');
+    if (description) {
+      description.textContent = 'Unable to load outfits right now. Please try again later.';
+    }
+  }
+}
+
+function applyOutfit(outfit) {
+  if (!outfit) return;
+  fetchNui('appearance_apply_outfit', outfit).then((result) => {
+    if (result?.appearanceData) {
+      state.appearance = result.appearanceData;
+      syncMaps();
+      renderSection(state.section);
+    }
+  });
+  closeModal();
+}
+
 function setupEventListeners() {
   document.getElementById('section-nav').addEventListener('click', handleNavClick);
   document.querySelectorAll('.camera-btn').forEach((button) => button.addEventListener('click', handleCameraClick));
   document.querySelectorAll('.rotate-btn').forEach((button) => button.addEventListener('click', handleRotateClick));
   document.getElementById('btn-turn').addEventListener('click', handleTurnClick);
-  document.getElementById('btn-save').addEventListener('click', handleSave);
+  document.getElementById('viewcart').addEventListener('click', () => toggleCartPanel());
+  document.getElementById('addtocar').addEventListener('click', handleCartUpdate);
+  document.getElementById('save_clothe').addEventListener('click', handleSave);
+  document.getElementById('load_clothe').addEventListener('click', openOutfitModal);
+  document.getElementById('remove_clothe').addEventListener('click', openRemoveClothesModal);
   document.getElementById('btn-exit').addEventListener('click', handleExit);
+  const modal = document.getElementById('modalfunc');
+  if (modal) {
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+  }
 }
 
 window.addEventListener('message', (event) => {

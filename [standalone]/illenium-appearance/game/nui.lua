@@ -80,6 +80,55 @@ RegisterNUICallback("appearance_change_eye_color", function(eyeColor, cb)
     client.setPedEyeColor(cache.ped, eyeColor)
 end)
 
+RegisterNUICallback("appearance_get_outfits", function(_, cb)
+    local outfits = lib.callback.await("illenium-appearance:server:getOutfits", false) or {}
+    cb(outfits)
+end)
+
+RegisterNUICallback("appearance_apply_outfit", function(outfit, cb)
+    if type(outfit) ~= "table" then
+        cb({})
+        return
+    end
+
+    if outfit.model then
+        local playerPed = client.setPlayerModel(outfit.model)
+        if playerPed then
+            SetEntityHeading(cache.ped, client.getHeading())
+            SetEntityInvincible(playerPed, true)
+            TaskStandStill(playerPed, -1)
+        end
+    end
+
+    if outfit.components then
+        for i = 1, #outfit.components do
+            local component = outfit.components[i]
+            if component.component_id then
+                local drawable = component.drawable or 0
+                local texture = component.texture or 0
+                SetPedComponentVariation(cache.ped, component.component_id, drawable, texture, 2)
+            end
+        end
+    end
+
+    if outfit.props then
+        for i = 1, #outfit.props do
+            local prop = outfit.props[i]
+            if prop.prop_id then
+                local drawable = prop.drawable or -1
+                local texture = prop.texture or 0
+                if drawable ~= -1 then
+                    SetPedPropIndex(cache.ped, prop.prop_id, drawable, texture, true)
+                else
+                    ClearPedProp(cache.ped, prop.prop_id)
+                end
+            end
+        end
+    end
+
+    cb({ appearanceData = client.getPedAppearance(cache.ped) })
+end)
+
 RegisterNUICallback("appearance_apply_tattoo", function(data, cb)
     local paid = not data.tattoo or not Config.ChargePerTattoo or lib.callback.await("illenium-appearance:server:payForTattoo", false, data.tattoo)
     if paid then

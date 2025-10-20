@@ -3,6 +3,8 @@
   --header-primary: linear-gradient(135deg, #0d1a2f 0%, #1f3453 100%);
   --accent: #3ba1ff;
   --accent-soft: rgba(59, 161, 255, 0.15);
+  --accent-strong: rgba(59, 161, 255, 0.45);
+  --danger: #ff6b6b;
   --text-primary: #f3f5fa;
   --text-secondary: #9aa4b7;
   --card-bg: rgba(24, 28, 38, 0.92);
@@ -17,7 +19,11 @@
 
 body {
   margin: 0;
-  background: transparent;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at top, rgba(29, 46, 74, 0.88), rgba(9, 13, 20, 0.95));
   color: var(--text-primary);
 }
 
@@ -26,10 +32,7 @@ body {
 }
 
 .leaderboard {
-  position: absolute;
-  top: 8vh;
-  left: 6vw;
-  width: min(68vw, 1080px);
+  width: min(72vw, 1150px);
   background: var(--panel-bg);
   border-radius: 18px;
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
@@ -44,9 +47,11 @@ body {
   padding: 18px 28px;
   background: var(--header-primary);
   border-bottom: 1px solid rgba(59, 161, 255, 0.35);
+  flex-wrap: wrap;
+  gap: 18px;
 }
 
-#header-title {
+#spanwardrobe {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -55,22 +60,87 @@ body {
   text-transform: uppercase;
 }
 
-#header-icon {
-  font-size: 1.5rem;
+.header-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(9, 13, 20, 0.45);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.35);
+  font-size: 1.1rem;
 }
 
 #header-actions {
   display: flex;
   gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pill-button {
+  background: rgba(9, 13, 20, 0.65);
+  border: 1px solid rgba(59, 161, 255, 0.35);
+  border-radius: 999px;
+  color: var(--text-primary);
+  padding: 10px 22px;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.pill-button:hover {
+  background: rgba(59, 161, 255, 0.18);
+  border-color: rgba(59, 161, 255, 0.55);
+  transform: translateY(-1px);
+}
+
+.pill-button.primary {
+  background: rgba(59, 161, 255, 0.25);
+  border-color: rgba(59, 161, 255, 0.55);
+}
+
+.pill-button.danger {
+  border-color: rgba(255, 107, 107, 0.55);
+  color: #ffd5d5;
+}
+
+.pill-button.danger:hover {
+  background: rgba(255, 107, 107, 0.2);
+  border-color: rgba(255, 107, 107, 0.7);
 }
 
 #header2 {
-  display: flex;
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  grid-template-rows: auto auto;
   align-items: center;
-  justify-content: space-between;
-  padding: 16px 28px;
+  gap: 12px 18px;
+  padding: 18px 28px 16px;
   background: rgba(9, 13, 20, 0.45);
   backdrop-filter: blur(12px);
+}
+
+#header2 .leaderboard__icon {
+  grid-row: 1 / span 2;
+}
+
+.header-secondary {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.header-tertiary {
+  display: flex;
+  gap: 10px;
+  grid-column: 2 / span 2;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .leaderboard__icon {
@@ -104,15 +174,29 @@ body {
   font-size: 0.72rem;
 }
 
-.header-secondary {
-  display: flex;
-  gap: 10px;
+.accent-button {
+  background: rgba(16, 26, 40, 0.82);
+  border: 1px solid rgba(59, 161, 255, 0.25);
+  border-radius: 10px;
+  color: var(--text-primary);
+  padding: 10px 16px;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.accent-button:hover {
+  background: rgba(59, 161, 255, 0.2);
+  border-color: rgba(59, 161, 255, 0.45);
+  transform: translateY(-1px);
 }
 
 .camera-btn,
 .rotate-btn,
 #btn-turn,
-#btn-save,
+#save_clothe,
 #btn-exit {
   background: rgba(13, 31, 49, 0.9);
   color: var(--text-primary);
@@ -129,13 +213,13 @@ body {
 .camera-btn:hover,
 .rotate-btn:hover,
 #btn-turn:hover,
-#btn-save:hover,
+#save_clothe:hover,
 #btn-exit:hover {
   background: rgba(59, 161, 255, 0.18);
   border-color: rgba(59, 161, 255, 0.45);
 }
 
-#btn-save {
+#save_clothe {
   background: rgba(59, 161, 255, 0.22);
   border-color: rgba(59, 161, 255, 0.5);
 }
@@ -146,6 +230,7 @@ body {
   padding: 14px 28px;
   background: rgba(15, 20, 29, 0.75);
   border-bottom: 1px solid rgba(59, 161, 255, 0.25);
+  flex-wrap: wrap;
 }
 
 .nav-btn {
@@ -667,6 +752,10 @@ body {
   overflow-y: auto;
 }
 
+.cart-panel.collapsed {
+  display: none;
+}
+
 .cart-panel__header {
   display: flex;
   align-items: center;
@@ -764,7 +853,133 @@ body {
   font-weight: 600;
 }
 
-#btn-save.has-cart {
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 6, 10, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(6px);
+  z-index: 50;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal__content {
+  background: rgba(15, 20, 29, 0.92);
+  border: 1px solid rgba(59, 161, 255, 0.35);
+  border-radius: 16px;
+  padding: 26px 32px;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.45);
+}
+
+.modal__title {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.modal__description {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.modal__actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.modal__actions button {
+  flex: 1 1 100px;
+  background: rgba(12, 18, 27, 0.85);
+  border: 1px solid rgba(59, 161, 255, 0.35);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.modal__actions button:hover {
+  background: rgba(59, 161, 255, 0.2);
+  border-color: rgba(59, 161, 255, 0.45);
+}
+
+.modal__actions button.danger {
+  border-color: rgba(255, 107, 107, 0.6);
+  color: #ffb2b2;
+}
+
+.modal__actions button.danger:hover {
+  background: rgba(255, 107, 107, 0.2);
+  border-color: rgba(255, 107, 107, 0.75);
+}
+
+.modal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.modal__list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: rgba(12, 18, 27, 0.85);
+  border: 1px solid rgba(59, 161, 255, 0.25);
+  border-radius: 12px;
+}
+
+.modal__list-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.modal__list-info span {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.modal__list button {
+  background: rgba(59, 161, 255, 0.18);
+  border: 1px solid rgba(59, 161, 255, 0.45);
+  border-radius: 10px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.modal__list button:hover {
+  background: rgba(59, 161, 255, 0.3);
+}
+
+#save_clothe.has-cart {
   background: rgba(67, 200, 128, 0.24);
   border-color: rgba(67, 200, 128, 0.55);
 }

@@ -4,18 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Illenium Appearance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
   <article class="leaderboard hidden" id="appearance-app">
     <header id="header1">
-      <span id="header-title">
-        <span id="header-icon">🧥</span>
-        <span id="header-name">Clothing Customizer</span>
+      <span id="spanwardrobe">
+        <span class="header-icon">🏬</span>
+        <span id="shopname">Wardrobe - Clothing Inventory</span>
       </span>
       <span id="header-actions">
-        <button id="btn-save">Save</button>
-        <button id="btn-exit">Cancel</button>
+        <button id="viewcart" class="pill-button">View Cart</button>
+        <button id="save_clothe" class="pill-button primary">Save Current</button>
+        <button id="btn-exit" class="pill-button danger">Close</button>
       </span>
     </header>
     <header id="header2">
@@ -25,6 +29,11 @@
         <span class="leaderboard__title--bottom" id="section-title-bottom">Select a category below</span>
       </h1>
       <div class="header-secondary">
+        <button id="addtocar" class="accent-button">Update Cart</button>
+        <button id="load_clothe" class="accent-button">See Outfits</button>
+        <button id="remove_clothe" class="accent-button">Remove Clothes</button>
+      </div>
+      <div class="header-tertiary">
         <button class="camera-btn" data-camera="head">Head Cam</button>
         <button class="camera-btn" data-camera="body">Body Cam</button>
         <button class="camera-btn" data-camera="bottom">Leg Cam</button>
@@ -33,7 +42,7 @@
         <button id="btn-turn">Flip</button>
       </div>
     </header>
-    <nav id="section-nav">
+    <nav id="section-nav" class="leaderboard-nav">
       <button class="nav-btn active" data-section="clothing">Clothes</button>
       <button class="nav-btn" data-section="props">Accessories</button>
       <button class="nav-btn" data-section="appearance">Appearance</button>
@@ -41,6 +50,7 @@
     <main class="leaderboard__profiles" id="clothemain"></main>
     <div id="panel-extra"></div>
   </article>
+  <div id="modalfunc" class="modal hidden"></div>
   <script type="module" src="assets/app.js"></script>
 </body>
 </html>
