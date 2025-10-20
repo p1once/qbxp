@@ -209,12 +209,43 @@ function showApp() {
   resetFilters();
   resetCart();
   state.cartVisible = false;
-  document.getElementById('appearance-app').classList.remove('hidden');
+  document.body.classList.remove('compact-layout', 'peek-mode');
+  const app = document.getElementById('appearance-app');
+  if (app) {
+    app.classList.remove('hidden');
+    app.setAttribute('aria-hidden', 'false');
+  }
+  const peekToggle = document.getElementById('peek-toggle');
+  if (peekToggle) {
+    peekToggle.classList.remove('hidden');
+    peekToggle.textContent = '👁 Character Peek';
+    peekToggle.setAttribute('aria-pressed', 'false');
+  }
+  const compactToggle = document.getElementById('toggle-compact');
+  if (compactToggle) {
+    compactToggle.textContent = 'Compact View';
+    compactToggle.setAttribute('aria-pressed', 'false');
+  }
 }
 
 function hideApp() {
   state.visible = false;
-  document.getElementById('appearance-app').classList.add('hidden');
+  document.body.classList.remove('compact-layout', 'peek-mode');
+  const app = document.getElementById('appearance-app');
+  if (app) {
+    app.classList.add('hidden');
+    app.setAttribute('aria-hidden', 'true');
+  }
+  const peekToggle = document.getElementById('peek-toggle');
+  if (peekToggle) {
+    peekToggle.classList.add('hidden');
+    peekToggle.setAttribute('aria-pressed', 'false');
+  }
+  const compactToggle = document.getElementById('toggle-compact');
+  if (compactToggle) {
+    compactToggle.setAttribute('aria-pressed', 'false');
+    compactToggle.textContent = 'Compact View';
+  }
   document.getElementById('clothemain').innerHTML = '';
   document.getElementById('panel-extra').innerHTML = '';
   document.getElementById('modalfunc').classList.add('hidden');
@@ -225,6 +256,28 @@ function hideApp() {
   state.storeCache.items = [];
   state.storeCache.type = null;
   state.cartVisible = false;
+}
+
+function toggleCompactMode() {
+  const isCompact = document.body.classList.toggle('compact-layout');
+  const button = document.getElementById('toggle-compact');
+  if (button) {
+    button.textContent = isCompact ? 'Expand View' : 'Compact View';
+    button.setAttribute('aria-pressed', isCompact ? 'true' : 'false');
+  }
+}
+
+function togglePeekMode() {
+  const isActive = document.body.classList.toggle('peek-mode');
+  const button = document.getElementById('peek-toggle');
+  if (button) {
+    button.textContent = isActive ? '↩ Return to Menu' : '👁 Character Peek';
+    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  }
+  const app = document.getElementById('appearance-app');
+  if (app) {
+    app.setAttribute('aria-hidden', isActive ? 'true' : 'false');
+  }
 }
 
 function syncMaps() {
@@ -1583,6 +1636,14 @@ function setupEventListeners() {
   document.getElementById('load_clothe').addEventListener('click', openOutfitModal);
   document.getElementById('remove_clothe').addEventListener('click', openRemoveClothesModal);
   document.getElementById('btn-exit').addEventListener('click', handleExit);
+  const compactToggle = document.getElementById('toggle-compact');
+  if (compactToggle) {
+    compactToggle.addEventListener('click', toggleCompactMode);
+  }
+  const peekToggle = document.getElementById('peek-toggle');
+  if (peekToggle) {
+    peekToggle.addEventListener('click', togglePeekMode);
+  }
   const modal = document.getElementById('modalfunc');
   if (modal) {
     modal.addEventListener('click', (event) => {

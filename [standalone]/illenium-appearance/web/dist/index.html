@@ -17,9 +17,10 @@
         <span id="shopname">Wardrobe - Clothing Inventory</span>
       </span>
       <span id="header-actions">
-        <button id="viewcart" class="pill-button">View Cart</button>
-        <button id="save_clothe" class="pill-button primary">Save Current</button>
-        <button id="btn-exit" class="pill-button danger">Close</button>
+        <button id="viewcart" class="pill-button" type="button">View Cart</button>
+        <button id="save_clothe" class="pill-button primary" type="button">Save Current</button>
+        <button id="toggle-compact" class="pill-button" type="button">Compact View</button>
+        <button id="btn-exit" class="pill-button danger" type="button">Close</button>
       </span>
     </header>
     <header id="header2">
@@ -50,6 +51,7 @@
     <main class="leaderboard__profiles" id="clothemain"></main>
     <div id="panel-extra"></div>
   </article>
+  <button id="peek-toggle" class="peek-control hidden" type="button" aria-pressed="false">👁 Character Peek</button>
   <div id="modalfunc" class="modal hidden"></div>
   <script type="module" src="assets/app.js"></script>
 </body>
