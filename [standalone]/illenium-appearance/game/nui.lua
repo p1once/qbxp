@@ -108,8 +108,25 @@ RegisterNUICallback("appearance_remove_clothes", function(clothes, cb)
     client.removeClothes(clothes)
 end)
 
-RegisterNUICallback("appearance_save", function(appearance, cb)
+RegisterNUICallback("appearance_save", function(payload, cb)
     cb(1)
+
+    local appearance = payload
+    if type(payload) == "table" then
+        if payload.appearance then
+            appearance = payload.appearance
+        end
+
+        if payload.cart then
+            appearance._cart = payload.cart
+            appearance._cartTotal = payload.cartTotal or 0
+        end
+
+        if payload.context then
+            appearance._context = payload.context
+        end
+    end
+
     client.wearClothes(appearance, "head")
     client.wearClothes(appearance, "body")
     client.wearClothes(appearance, "bottom")

@@ -126,6 +126,7 @@ function InitializeCharacter(gender, onSubmit, onCancel)
 end
 
 function OpenShop(config, isPedMenu, shopType)
+    config.shopType = shopType
     lib.callback("illenium-appearance:server:hasMoney", false, function(hasMoney, money)
         if not hasMoney and not isPedMenu then
             lib.notify({
@@ -139,9 +140,18 @@ function OpenShop(config, isPedMenu, shopType)
 
         client.startPlayerCustomization(function(appearance)
             if appearance then
+                local cart = appearance._cart
+                local cartTotal = appearance._cartTotal
+                local context = appearance._context
+
+                appearance._cart = nil
+                appearance._cartTotal = nil
+                appearance._context = nil
+
                 if not isPedMenu then
-                    TriggerServerEvent("illenium-appearance:server:chargeCustomer", shopType)
+                    TriggerServerEvent("illenium-appearance:server:chargeCustomer", shopType, cartTotal, cart, context)
                 end
+
                 TriggerServerEvent("illenium-appearance:server:saveAppearance", appearance)
             else
                 lib.notify({

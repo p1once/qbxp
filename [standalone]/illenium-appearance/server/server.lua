@@ -170,13 +170,41 @@ RegisterServerEvent("illenium-appearance:server:saveAppearance", function(appear
     end
 end)
 
-RegisterServerEvent("illenium-appearance:server:chargeCustomer", function(shopType)
+RegisterServerEvent("illenium-appearance:server:chargeCustomer", function(shopType, overrideCost, cart, context)
     local src = source
-    local money = getMoneyForShop(shopType)
-    if Framework.RemoveMoney(src, "cash", money) then
+    local cost = tonumber(overrideCost) or getMoneyForShop(shopType)
+    if cost < 0 then cost = 0 end
+
+    local removed = true
+    if cost > 0 then
+        removed = Framework.RemoveMoney(src, "cash", cost)
+    end
+
+    if removed then
+        local description = string.format(_L("purchase.store.success.description"), cost, shopType)
+
+        if type(cart) == "table" and next(cart) then
+            local lines = {}
+            for i = 1, math.min(#cart, 3) do
+                local entry = cart[i]
+                local variantSummary = {}
+                if entry.variants then
+                    for j = 1, math.min(#entry.variants, 2) do
+                        local variant = entry.variants[j]
+                        variantSummary[#variantSummary + 1] = string.format("%s %s", variant.label or "", variant.value or 0)
+                    end
+                end
+                lines[#lines + 1] = string.format("%s%s%s", entry.label or "Item", #variantSummary > 0 and " • " or "", table.concat(variantSummary, ", "))
+            end
+            if #cart > 3 then
+                lines[#lines + 1] = string.format("+%s more item(s)...", #cart - 3)
+            end
+            description = description .. "\n" .. table.concat(lines, "\n")
+        end
+
         lib.notify(src, {
             title = _L("purchase.store.success.title"),
-            description = string.format(_L("purchase.store.success.description"), money, shopType),
+            description = description,
             type = "success",
             position = Config.NotifyOptions.position
         })

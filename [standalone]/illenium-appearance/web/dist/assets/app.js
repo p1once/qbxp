@@ -10,6 +10,22 @@ const state = {
   propData: {},
   locales: null,
   theme: null,
+  filters: {
+    query: '',
+    categories: new Set(),
+    sort: 'featured',
+    favoritesOnly: false,
+  },
+  cart: [],
+  cartTotals: {
+    items: 0,
+    cost: 0,
+  },
+  favorites: new Set(),
+  storeCache: {
+    items: [],
+    type: null,
+  },
 };
 
 const componentMap = new Map([
@@ -36,11 +52,127 @@ const propMap = new Map([
 
 const itemRegistry = new Map();
 
+const componentMeta = {
+  mask: { category: 'Headwear', icon: '😷', tags: ['Head', 'Utility'] },
+  arms: { category: 'Upper Body', icon: '🧥', tags: ['Upper', 'Layer'] },
+  pants: { category: 'Lower Body', icon: '👖', tags: ['Lower'] },
+  bags: { category: 'Accessories', icon: '🎒', tags: ['Utility'] },
+  shoes: { category: 'Footwear', icon: '👟', tags: ['Footwear'] },
+  chain: { category: 'Accessories', icon: '⛓️', tags: ['Jewelry'] },
+  tshirt: { category: 'Upper Body', icon: '👕', tags: ['Upper'] },
+  bproof: { category: 'Protective', icon: '🛡️', tags: ['Utility'] },
+  decals: { category: 'Detailing', icon: '🎨', tags: ['Customization'] },
+  torso: { category: 'Outerwear', icon: '🧥', tags: ['Upper', 'Layer'] },
+};
+
+const propMeta = {
+  helmet: { category: 'Headwear', icon: '🪖', tags: ['Head'] },
+  glasses: { category: 'Facewear', icon: '🕶️', tags: ['Head'] },
+  ears: { category: 'Accessories', icon: '👂', tags: ['Jewelry'] },
+  watches: { category: 'Accessories', icon: '⌚', tags: ['Jewelry'] },
+  bracelets: { category: 'Accessories', icon: '📿', tags: ['Jewelry'] },
+};
+
 const sectionLabels = {
   clothing: 'Clothing',
   props: 'Accessories',
   appearance: 'Appearance',
 };
+
+function resetFilters() {
+  state.filters.query = '';
+  state.filters.sort = 'featured';
+  state.filters.categories = new Set();
+  state.filters.favoritesOnly = false;
+}
+
+function resolveMetaForItem(type, key) {
+  if (type === 'component') {
+    return componentMeta[key] || { category: 'Apparel', icon: '🧾', tags: [] };
+  }
+  if (type === 'prop') {
+    return propMeta[key] || { category: 'Accessory', icon: '🧾', tags: [] };
+  }
+  return { category: 'General', icon: '🧾', tags: [] };
+}
+
+function computeBasePrice(type) {
+  if (type === 'prop') {
+    return 75;
+  }
+  if (type === 'appearance') {
+    return 60;
+  }
+  return 100;
+}
+
+function resolvePrice(type, key) {
+  const themePricing = state.theme?.pricing?.[type]?.[key] ?? state.theme?.pricing?.[`default_${type}`];
+  const configPricing = state.config?.pricing?.[type]?.[key] ?? state.config?.pricing?.[`default_${type}`];
+  const value = themePricing ?? configPricing;
+  if (typeof value === 'number') {
+    return value;
+  }
+  return computeBasePrice(type);
+}
+
+function formatCurrency(value) {
+  const amount = Math.max(0, Math.round(value));
+  return `$${amount.toLocaleString()}`;
+}
+
+function resetCart() {
+  state.cart = [];
+  state.cartTotals.items = 0;
+  state.cartTotals.cost = 0;
+  updateCheckoutButton();
+  const cartPanel = document.getElementById('cart-panel');
+  if (cartPanel) {
+    cartPanel.innerHTML = '';
+  }
+}
+
+function getCategoriesFromItems(items) {
+  const categories = new Set();
+  for (const item of items) {
+    if (item.category) {
+      categories.add(item.category);
+    }
+  }
+  return Array.from(categories).sort((a, b) => a.localeCompare(b));
+}
+
+function resolveVariantLabel(variant) {
+  const key = variant?.variantKey || '';
+  if (!key) {
+    return variant?.label || 'Variant';
+  }
+  switch (key) {
+    case 'drawable':
+      return 'Style';
+    case 'texture':
+      return 'Texture';
+    case 'color':
+      return 'Color';
+    case 'secondColor':
+      return 'Accent';
+    case 'highlight':
+      return 'Highlight';
+    default:
+      return capitalize(key);
+  }
+}
+
+function serializeCart() {
+  return state.cart.map((entry) => ({
+    id: entry.id,
+    label: entry.label,
+    type: entry.type,
+    price: entry.price,
+    category: entry.category,
+    variants: entry.variants,
+  }));
+}
 
 function fetchNui(event, data = {}) {
   return fetch(`https://illenium-appearance/${event}`, {
@@ -70,6 +202,8 @@ function fetchNui(event, data = {}) {
 function showApp() {
   if (state.visible) return;
   state.visible = true;
+  resetFilters();
+  resetCart();
   document.getElementById('appearance-app').classList.remove('hidden');
 }
 
@@ -79,6 +213,10 @@ function hideApp() {
   document.getElementById('clothemain').innerHTML = '';
   document.getElementById('panel-extra').innerHTML = '';
   itemRegistry.clear();
+  resetFilters();
+  resetCart();
+  state.storeCache.items = [];
+  state.storeCache.type = null;
 }
 
 function syncMaps() {
@@ -139,6 +277,7 @@ function updatePropArray(propId, key, value) {
 }
 
 function renderSection(section) {
+  const previousSection = state.section;
   state.section = section;
   document.querySelectorAll('.nav-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.section === section);
@@ -148,19 +287,26 @@ function renderSection(section) {
   if (section !== 'appearance') {
     document.getElementById('panel-extra').innerHTML = '';
   }
+  if (section !== 'appearance' && previousSection !== section) {
+    resetFilters();
+  }
   titleTop.textContent = sectionLabels[section] || 'Appearance';
   switch (section) {
     case 'clothing':
       titleBottom.textContent = 'Adjust drawables and textures for clothing items';
-      renderItems(buildClothingItems());
+      state.storeCache.items = buildClothingItems();
+      state.storeCache.type = 'component';
+      renderStore(state.storeCache.items, 'component');
       break;
     case 'props':
       titleBottom.textContent = 'Manage accessories and wearable props';
-      renderItems(buildPropItems());
+      state.storeCache.items = buildPropItems();
+      state.storeCache.type = 'prop';
+      renderStore(state.storeCache.items, 'prop');
       break;
     default:
       titleBottom.textContent = 'Fine tune hair, overlays and facial features';
-      renderItems(buildAppearanceItems());
+      renderAppearanceItems(buildAppearanceItems());
       break;
   }
 }
@@ -183,10 +329,27 @@ function buildClothingItems() {
       continue;
     }
 
-    items.push(createComponentItem(componentId, 'drawable', `${info.label} 1`, settings.drawable.min, settings.drawable.max, data.drawable));
+    const meta = resolveMetaForItem('component', info.key);
+    const card = {
+      id: `component-${componentId}`,
+      label: info.label,
+      icon: meta.icon,
+      category: meta.category,
+      tags: meta.tags,
+      description: `Explore ${info.label.toLowerCase()} collections and textures`,
+      price: resolvePrice('component', info.key),
+      type: 'component',
+      componentId,
+      key: info.key,
+      variants: [],
+    };
+
+    card.variants.push(createComponentItem(componentId, 'drawable', `${info.label} Style`, settings.drawable.min, settings.drawable.max, data.drawable));
     if (info.hasTexture && settings.texture) {
-      items.push(createComponentItem(componentId, 'texture', `${info.label} 2`, settings.texture.min, settings.texture.max, data.texture));
+      card.variants.push(createComponentItem(componentId, 'texture', `${info.label} Texture`, settings.texture.min, settings.texture.max, data.texture));
     }
+
+    items.push(card);
   }
   return items;
 }
@@ -201,6 +364,10 @@ function createComponentItem(componentId, key, label, min, max, value) {
     step: 1,
     value,
     icon: '👕',
+    type: 'slider',
+    parent: `component-${componentId}`,
+    group: componentId,
+    variantKey: key,
     action: (newValue) => {
       const component = state.componentData[componentId];
       if (!component) return;
@@ -211,12 +378,12 @@ function createComponentItem(componentId, key, label, min, max, value) {
           state.componentSettings[componentId] = updated;
           const targetKey = key === 'drawable' ? 'texture' : key;
           if (updated[targetKey]) {
-            const otherItemId = `${componentId}-${targetKey}`;
-            const otherItem = itemRegistry.get(otherItemId);
-            if (otherItem) {
-              if (updated[targetKey].max !== undefined) {
-                otherItem.max = updated[targetKey].max;
-                updateSliderBounds(otherItemId, updated[targetKey].min, updated[targetKey].max, otherItem.step);
+          const otherItemId = `${componentId}-${targetKey}`;
+          const otherItem = itemRegistry.get(otherItemId);
+          if (otherItem) {
+            if (updated[targetKey].max !== undefined) {
+              otherItem.max = updated[targetKey].max;
+              updateSliderBounds(otherItemId, updated[targetKey].min, updated[targetKey].max, otherItem.step);
               }
               const refreshedComponent = state.componentData[componentId];
               if (refreshedComponent) {
@@ -244,10 +411,27 @@ function buildPropItems() {
     const data = state.propData[propId];
     if (!settings || !data) continue;
 
-    items.push(createPropItem(propId, 'drawable', `${info.label} 1`, settings.drawable.min, settings.drawable.max, data.drawable));
+    const meta = resolveMetaForItem('prop', info.key);
+    const card = {
+      id: `prop-${propId}`,
+      label: info.label,
+      icon: meta.icon,
+      category: meta.category,
+      tags: meta.tags,
+      description: `Curate ${info.label.toLowerCase()} styles to match your fit`,
+      price: resolvePrice('prop', info.key),
+      type: 'prop',
+      propId,
+      key: info.key,
+      variants: [],
+    };
+
+    card.variants.push(createPropItem(propId, 'drawable', `${info.label} Style`, settings.drawable.min, settings.drawable.max, data.drawable));
     if (settings.texture) {
-      items.push(createPropItem(propId, 'texture', `${info.label} 2`, settings.texture.min, settings.texture.max, data.texture));
+      card.variants.push(createPropItem(propId, 'texture', `${info.label} Texture`, settings.texture.min, settings.texture.max, data.texture));
     }
+
+    items.push(card);
   }
   return items;
 }
@@ -262,6 +446,10 @@ function createPropItem(propId, key, label, min, max, value) {
     step: 1,
     value,
     icon: '🧢',
+    type: 'slider',
+    parent: `prop-${propId}`,
+    group: propId,
+    variantKey: key,
     action: (newValue) => {
       const prop = state.propData[propId];
       if (!prop) return;
@@ -294,6 +482,13 @@ function buildAppearanceItems() {
   const items = [];
   const extraPanel = document.getElementById('panel-extra');
   extraPanel.innerHTML = '';
+
+  if (state.config?.shopType === 'clothing') {
+    const barberNote = document.createElement('div');
+    barberNote.className = 'barber-note';
+    barberNote.innerHTML = '<h4>Barber Services</h4><p>Visit a barber to manage haircuts and beard styles. Clothing stores focus on outfits only.</p>';
+    extraPanel.appendChild(barberNote);
+  }
 
   if (state.config?.ped && state.settings?.ped?.model?.items) {
     const select = document.createElement('select');
@@ -483,7 +678,7 @@ function capitalize(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-function renderItems(items) {
+function renderAppearanceItems(items) {
   const container = document.getElementById('clothemain');
   container.innerHTML = '';
   itemRegistry.clear();
@@ -558,6 +753,514 @@ function renderItems(items) {
   }
 }
 
+function filterStoreItems(items) {
+  const query = state.filters.query.trim().toLowerCase();
+  const activeCategories = state.filters.categories;
+  const favoritesOnly = state.filters.favoritesOnly;
+
+  const filtered = items.filter((item) => {
+    const matchesCategory = !activeCategories.size || activeCategories.has(item.category);
+    const matchesFavorites = !favoritesOnly || state.favorites.has(item.id);
+    if (!matchesCategory || !matchesFavorites) {
+      return false;
+    }
+    if (!query) {
+      return true;
+    }
+    const haystack = [item.label, item.description, ...(item.tags || [])]
+      .filter(Boolean)
+      .map((entry) => entry.toLowerCase());
+    return haystack.some((entry) => entry.includes(query));
+  });
+
+  switch (state.filters.sort) {
+    case 'price-asc':
+      filtered.sort((a, b) => a.price - b.price);
+      break;
+    case 'price-desc':
+      filtered.sort((a, b) => b.price - a.price);
+      break;
+    case 'alpha':
+      filtered.sort((a, b) => a.label.localeCompare(b.label));
+      break;
+    default:
+      filtered.sort((a, b) => {
+        const aFav = state.favorites.has(a.id) ? 1 : 0;
+        const bFav = state.favorites.has(b.id) ? 1 : 0;
+        if (aFav !== bFav) {
+          return bFav - aFav;
+        }
+        return a.label.localeCompare(b.label);
+      });
+      break;
+  }
+
+  return filtered;
+}
+
+function renderStore(items, type) {
+  const container = document.getElementById('clothemain');
+  container.innerHTML = '';
+  itemRegistry.clear();
+
+  const layout = document.createElement('div');
+  layout.className = 'store-layout';
+
+  const controls = createStoreControls(items, type);
+  layout.appendChild(controls);
+
+  const body = document.createElement('div');
+  body.className = 'store-body';
+
+  const grid = document.createElement('div');
+  grid.className = 'store-grid';
+
+  const filteredItems = filterStoreItems(items);
+  if (!filteredItems.length) {
+    const empty = document.createElement('div');
+    empty.className = 'store-empty';
+    empty.innerHTML = '<h3>No styles found</h3><p>Adjust your filters or search for another item.</p>';
+    grid.appendChild(empty);
+  } else {
+    for (const item of filteredItems) {
+      const card = buildStoreCard(item);
+      grid.appendChild(card);
+    }
+  }
+
+  body.appendChild(grid);
+  calculateCartTotals();
+  body.appendChild(renderCartPanel());
+  layout.appendChild(body);
+  container.appendChild(layout);
+  updateCheckoutButton();
+}
+
+function createStoreControls(items, type) {
+  const controls = document.createElement('section');
+  controls.className = 'store-controls';
+
+  const searchWrapper = document.createElement('div');
+  searchWrapper.className = 'store-search';
+  const searchIcon = document.createElement('span');
+  searchIcon.className = 'store-search__icon';
+  searchIcon.textContent = '🔍';
+  const searchInput = document.createElement('input');
+  searchInput.type = 'search';
+  searchInput.placeholder = type === 'prop' ? 'Search accessories...' : 'Search apparel...';
+  searchInput.value = state.filters.query;
+  searchInput.addEventListener('input', (event) => {
+    state.filters.query = event.target.value;
+    renderStore(state.storeCache.items, state.storeCache.type);
+  });
+  searchWrapper.appendChild(searchIcon);
+  searchWrapper.appendChild(searchInput);
+
+  const filterGroup = document.createElement('div');
+  filterGroup.className = 'store-filters';
+  const categories = getCategoriesFromItems(items);
+  for (const category of categories) {
+    const chip = document.createElement('button');
+    chip.className = 'filter-chip';
+    chip.textContent = category;
+    chip.dataset.category = category;
+    chip.classList.toggle('active', state.filters.categories.has(category));
+    chip.addEventListener('click', () => {
+      if (state.filters.categories.has(category)) {
+        state.filters.categories.delete(category);
+      } else {
+        state.filters.categories.add(category);
+      }
+      renderStore(state.storeCache.items, state.storeCache.type);
+    });
+    filterGroup.appendChild(chip);
+  }
+
+  const favoritesToggle = document.createElement('button');
+  favoritesToggle.className = 'filter-chip favorites';
+  favoritesToggle.textContent = state.filters.favoritesOnly ? '★ Favorites' : '☆ Favorites';
+  favoritesToggle.classList.toggle('active', state.filters.favoritesOnly);
+  favoritesToggle.addEventListener('click', () => {
+    state.filters.favoritesOnly = !state.filters.favoritesOnly;
+    renderStore(state.storeCache.items, state.storeCache.type);
+  });
+  filterGroup.appendChild(favoritesToggle);
+
+  const sortWrapper = document.createElement('div');
+  sortWrapper.className = 'store-sort';
+  const sortLabel = document.createElement('label');
+  sortLabel.textContent = 'Sort By';
+  const sortSelect = document.createElement('select');
+  sortSelect.innerHTML = `
+    <option value="featured">Featured</option>
+    <option value="price-asc">Price: Low to High</option>
+    <option value="price-desc">Price: High to Low</option>
+    <option value="alpha">Alphabetical</option>
+  `;
+  sortSelect.value = state.filters.sort;
+  sortSelect.addEventListener('change', () => {
+    state.filters.sort = sortSelect.value;
+    renderStore(state.storeCache.items, state.storeCache.type);
+  });
+  sortWrapper.appendChild(sortLabel);
+  sortWrapper.appendChild(sortSelect);
+
+  const resetButton = document.createElement('button');
+  resetButton.className = 'store-reset';
+  resetButton.textContent = 'Reset Filters';
+  resetButton.addEventListener('click', () => {
+    resetFilters();
+    renderStore(state.storeCache.items, state.storeCache.type);
+  });
+
+  const resultInfo = document.createElement('div');
+  resultInfo.className = 'store-results';
+  const count = filterStoreItems(items).length;
+  resultInfo.textContent = `${count} ${count === 1 ? 'style' : 'styles'} ready to try`;
+
+  controls.appendChild(searchWrapper);
+  controls.appendChild(filterGroup);
+  controls.appendChild(sortWrapper);
+  controls.appendChild(resetButton);
+  controls.appendChild(resultInfo);
+
+  return controls;
+}
+
+function buildStoreCard(item) {
+  const card = document.createElement('article');
+  card.className = 'store-card';
+  card.dataset.itemId = item.id;
+
+  const header = document.createElement('header');
+  header.className = 'store-card__header';
+
+  const icon = document.createElement('div');
+  icon.className = 'store-card__icon';
+  icon.textContent = item.icon || '•';
+  header.appendChild(icon);
+
+  const title = document.createElement('div');
+  title.className = 'store-card__title';
+  const heading = document.createElement('h3');
+  heading.textContent = item.label;
+  const category = document.createElement('span');
+  category.className = 'store-card__category';
+  category.textContent = item.category;
+  title.appendChild(heading);
+  title.appendChild(category);
+  header.appendChild(title);
+
+  const favoriteButton = document.createElement('button');
+  favoriteButton.className = 'favorite-btn';
+  favoriteButton.dataset.itemId = item.id;
+  favoriteButton.textContent = isFavorite(item.id) ? '★' : '☆';
+  favoriteButton.title = isFavorite(item.id) ? 'Remove from favorites' : 'Mark as favorite';
+  favoriteButton.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleFavorite(item.id, favoriteButton);
+  });
+  header.appendChild(favoriteButton);
+
+  card.appendChild(header);
+
+  if (item.description) {
+    const description = document.createElement('p');
+    description.className = 'store-card__description';
+    description.textContent = item.description;
+    card.appendChild(description);
+  }
+
+  const price = document.createElement('div');
+  price.className = 'store-card__price';
+  price.textContent = formatCurrency(item.price);
+  card.appendChild(price);
+
+  if (item.tags?.length) {
+    const tagGroup = document.createElement('div');
+    tagGroup.className = 'store-card__tags';
+    for (const tag of item.tags) {
+      const chip = document.createElement('span');
+      chip.className = 'store-card__tag';
+      chip.textContent = tag;
+      tagGroup.appendChild(chip);
+    }
+    card.appendChild(tagGroup);
+  }
+
+  const variantsContainer = document.createElement('div');
+  variantsContainer.className = 'store-card__variants';
+  for (const variant of item.variants) {
+    itemRegistry.set(variant.id, variant);
+    const variantRow = document.createElement('div');
+    variantRow.className = 'store-card__variant';
+
+    const variantLabel = document.createElement('label');
+    variantLabel.textContent = resolveVariantLabel(variant);
+    variantLabel.htmlFor = `slider-${variant.id}`;
+    variantRow.appendChild(variantLabel);
+
+    const controls = document.createElement('div');
+    controls.className = 'store-card__controls';
+
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.className = 'slider__input';
+    slider.dataset.itemId = variant.id;
+    slider.id = `slider-${variant.id}`;
+    slider.min = variant.min;
+    slider.max = variant.max;
+    slider.step = variant.step;
+    slider.value = variant.value;
+    controls.appendChild(slider);
+
+    const numberInput = document.createElement('input');
+    numberInput.type = 'number';
+    numberInput.className = 'indextext';
+    numberInput.dataset.itemId = variant.id;
+    numberInput.min = variant.min;
+    numberInput.max = variant.max;
+    numberInput.step = variant.step;
+    numberInput.value = variant.value;
+    controls.appendChild(numberInput);
+
+    slider.addEventListener('input', handleRangeInput);
+    numberInput.addEventListener('change', handleNumberChange);
+
+    variantRow.appendChild(controls);
+    variantsContainer.appendChild(variantRow);
+  }
+  card.appendChild(variantsContainer);
+
+  const summary = document.createElement('div');
+  summary.className = 'store-card__summary';
+  summary.textContent = buildVariantSummary(item);
+  card.appendChild(summary);
+
+  const actions = document.createElement('div');
+  actions.className = 'store-card__actions';
+  const addButton = document.createElement('button');
+  addButton.className = 'store-card__action';
+  addButton.dataset.itemId = item.id;
+  if (isInCart(item.id)) {
+    addButton.textContent = 'In Bag';
+    addButton.classList.add('in-cart');
+  } else {
+    addButton.textContent = 'Add to Bag';
+  }
+  addButton.addEventListener('click', () => addToCart(item, addButton));
+  actions.appendChild(addButton);
+  card.appendChild(actions);
+
+  return card;
+}
+
+function renderCartPanel() {
+  const panel = document.createElement('aside');
+  panel.id = 'cart-panel';
+  panel.className = 'cart-panel';
+  updateCartPanel(panel);
+  return panel;
+}
+
+function calculateCartTotals() {
+  let total = 0;
+  for (const entry of state.cart) {
+    total += entry.price;
+  }
+  state.cartTotals.items = state.cart.length;
+  state.cartTotals.cost = total;
+}
+
+function updateCartPanel(target) {
+  const panel = target || document.getElementById('cart-panel');
+  if (!panel) return;
+
+  panel.innerHTML = '';
+
+  const header = document.createElement('header');
+  header.className = 'cart-panel__header';
+  const title = document.createElement('h3');
+  title.textContent = 'Shopping Bag';
+  const count = document.createElement('span');
+  count.textContent = `${state.cartTotals.items} ${state.cartTotals.items === 1 ? 'item' : 'items'}`;
+  header.appendChild(title);
+  header.appendChild(count);
+  panel.appendChild(header);
+
+  if (!state.cart.length) {
+    const empty = document.createElement('div');
+    empty.className = 'cart-panel__empty';
+    empty.innerHTML = '<p>Your bag is empty. Pin favorites or add styles to curate a look.</p>';
+    panel.appendChild(empty);
+  } else {
+    const list = document.createElement('ul');
+    list.className = 'cart-panel__list';
+    for (const entry of state.cart) {
+      const item = document.createElement('li');
+      item.className = 'cart-panel__item';
+
+      const info = document.createElement('div');
+      info.className = 'cart-panel__details';
+      const name = document.createElement('strong');
+      name.textContent = `${entry.icon || '•'} ${entry.label}`;
+      const meta = document.createElement('span');
+      meta.textContent = entry.category;
+      const variants = document.createElement('span');
+      variants.className = 'cart-panel__variants';
+      variants.textContent = entry.variants.map((variant) => `${variant.label} ${variant.value}`).join(' • ');
+      info.appendChild(name);
+      info.appendChild(meta);
+      info.appendChild(variants);
+
+      const actions = document.createElement('div');
+      actions.className = 'cart-panel__meta';
+      const price = document.createElement('span');
+      price.className = 'cart-panel__price';
+      price.textContent = formatCurrency(entry.price);
+      const remove = document.createElement('button');
+      remove.className = 'cart-panel__remove';
+      remove.textContent = 'Remove';
+      remove.addEventListener('click', () => removeFromCart(entry.id));
+      actions.appendChild(price);
+      actions.appendChild(remove);
+
+      item.appendChild(info);
+      item.appendChild(actions);
+      list.appendChild(item);
+    }
+    panel.appendChild(list);
+  }
+
+  const footer = document.createElement('footer');
+  footer.className = 'cart-panel__footer';
+  const totalLabel = document.createElement('span');
+  totalLabel.textContent = 'Estimated Total';
+  const totalValue = document.createElement('span');
+  totalValue.className = 'cart-panel__total';
+  totalValue.textContent = formatCurrency(state.cartTotals.cost);
+  footer.appendChild(totalLabel);
+  footer.appendChild(totalValue);
+  panel.appendChild(footer);
+}
+
+function isInCart(itemId) {
+  return state.cart.some((entry) => entry.id === itemId);
+}
+
+function addToCart(item, button) {
+  const entry = {
+    id: item.id,
+    label: item.label,
+    icon: item.icon,
+    category: item.category,
+    price: item.price,
+    type: item.type,
+    variants: item.variants.map((variant) => ({
+      id: variant.id,
+      label: resolveVariantLabel(variant),
+      value: variant.value,
+    })),
+  };
+
+  const index = state.cart.findIndex((cartItem) => cartItem.id === item.id);
+  if (index !== -1) {
+    state.cart[index] = entry;
+  } else {
+    state.cart.push(entry);
+  }
+
+  calculateCartTotals();
+  updateCartPanel();
+  updateCheckoutButton();
+
+  if (button) {
+    button.textContent = 'In Bag';
+    button.classList.add('in-cart');
+  }
+}
+
+function removeFromCart(itemId) {
+  const index = state.cart.findIndex((entry) => entry.id === itemId);
+  if (index === -1) return;
+  state.cart.splice(index, 1);
+  calculateCartTotals();
+  updateCartPanel();
+  updateCheckoutButton();
+
+  const button = document.querySelector(`.store-card__action[data-item-id="${itemId}"]`);
+  if (button) {
+    button.textContent = 'Add to Bag';
+    button.classList.remove('in-cart');
+  }
+
+  if (state.filters.favoritesOnly && !state.favorites.has(itemId)) {
+    renderStore(state.storeCache.items, state.storeCache.type);
+  }
+}
+
+function isFavorite(itemId) {
+  return state.favorites.has(itemId);
+}
+
+function toggleFavorite(itemId, button) {
+  if (state.favorites.has(itemId)) {
+    state.favorites.delete(itemId);
+  } else {
+    state.favorites.add(itemId);
+  }
+
+  updateFavoriteButtonState(itemId, button);
+
+  if (state.filters.favoritesOnly) {
+    renderStore(state.storeCache.items, state.storeCache.type);
+  }
+}
+
+function updateFavoriteButtonState(itemId, button) {
+  const targetButton = button || document.querySelector(`.favorite-btn[data-item-id="${itemId}"]`);
+  if (!targetButton) return;
+  const fav = state.favorites.has(itemId);
+  targetButton.textContent = fav ? '★' : '☆';
+  targetButton.title = fav ? 'Remove from favorites' : 'Mark as favorite';
+  targetButton.classList.toggle('active', fav);
+  const favoritesToggle = document.querySelector('.filter-chip.favorites');
+  if (favoritesToggle) {
+    favoritesToggle.textContent = state.filters.favoritesOnly ? '★ Favorites' : '☆ Favorites';
+    favoritesToggle.classList.toggle('active', state.filters.favoritesOnly);
+  }
+}
+
+function buildVariantSummary(item) {
+  if (!item?.variants?.length) {
+    return 'Preview this piece before adding it to your look.';
+  }
+  return item.variants
+    .map((variant) => `${resolveVariantLabel(variant)} ${variant.value}`)
+    .join(' • ');
+}
+
+function refreshVariantSummary(parentId) {
+  if (!parentId) return;
+  const summary = document.querySelector(`.store-card[data-item-id="${parentId}"] .store-card__summary`);
+  if (!summary) return;
+  const storeItem = state.storeCache.items.find((entry) => entry.id === parentId);
+  if (!storeItem) return;
+  summary.textContent = buildVariantSummary(storeItem);
+}
+
+function updateCheckoutButton() {
+  const button = document.getElementById('btn-save');
+  if (!button) return;
+  if (state.cartTotals.items > 0) {
+    button.textContent = `Checkout ${formatCurrency(state.cartTotals.cost)}`;
+    button.classList.add('has-cart');
+  } else {
+    button.textContent = 'Save';
+    button.classList.remove('has-cart');
+  }
+}
+
 function handleRangeInput(event) {
   const id = event.target.dataset.itemId;
   const item = itemRegistry.get(id);
@@ -565,6 +1268,9 @@ function handleRangeInput(event) {
   const value = clamp(parseNumber(event.target.value, item.step), item.min, item.max);
   item.value = value;
   updateNumberValue(id, value);
+  if (item.parent) {
+    refreshVariantSummary(item.parent);
+  }
   queueAction(item, value);
 }
 
@@ -576,6 +1282,9 @@ function handleNumberChange(event) {
   event.target.value = value;
   item.value = value;
   updateSliderValue(id, value);
+  if (item.parent) {
+    refreshVariantSummary(item.parent);
+  }
   queueAction(item, value);
 }
 
@@ -688,7 +1397,18 @@ function handleTurnClick() {
 
 function handleSave() {
   if (!state.appearance) return;
-  fetchNui('appearance_save', state.appearance);
+  const payload = {
+    appearance: state.appearance,
+    context: {
+      section: state.section,
+      shopType: state.config?.shopType || null,
+    },
+  };
+  if (state.cartTotals.items > 0) {
+    payload.cart = serializeCart();
+    payload.cartTotal = state.cartTotals.cost;
+  }
+  fetchNui('appearance_save', payload);
 }
 
 function handleExit() {

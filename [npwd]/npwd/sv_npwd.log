@@ -3697,3 +3697,6 @@
 {"level":"silly","message":{"data":{"bio":"","createdAt":"2025-10-15T21:44:36.000Z","id":19,"identifier":"DHUR01A1","image":"https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg","job":"","lastActive":1760564676,"lastActiveFormatted":"Wed, 15 Oct 2025 21:44:36 GMT","location":"","name":"Hanky Kiki","tagList":[],"tags":"","updatedAt":"2025-10-15T21:44:36.000Z","viewed":false,"voiceMessage":null},"status":"ok"},"module":"events","timestamp":"2025-10-19T23:37:15.745Z"}
 {"level":"silly","message":"Response Promise Event npwd:fetchMessageGroups:25cdfa6f-94b9-44da-accb-d40f80b7f0f0 (9.8463ms), Data >>","module":"events","timestamp":"2025-10-19T23:37:15.745Z"}
 {"level":"silly","message":{"data":[],"status":"ok"},"module":"events","timestamp":"2025-10-19T23:37:15.746Z"}
+{"level":"info","message":"Executed query (SELECT id FROM npwd_marketplace_listings WHERE identifier = ? [\"DHUR01A1\"]) in 79.8241ms'","module":"DBInterface","timestamp":"2025-10-20T00:40:23.113Z"}
+{"level":"info","message":"Executed query (DELETE FROM npwd_marketplace_listings WHERE identifier = ? AND reported = 0 [\"DHUR01A1\"]) in 1.1655ms'","module":"DBInterface","timestamp":"2025-10-20T00:40:23.114Z"}
+{"level":"info","message":"Unloaded NPWD Player, source: (1)","module":"player","timestamp":"2025-10-20T00:40:23.114Z"}
