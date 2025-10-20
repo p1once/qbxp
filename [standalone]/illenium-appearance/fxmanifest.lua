@@ -90,7 +90,8 @@ shared_scripts {
 
 files {
   "web/dist/index.html",
-  "web/dist/assets/*.js"
+  "web/dist/assets/*.js",
+  "web/dist/assets/*.css"
 }
 
 ui_page "web/dist/index.html"

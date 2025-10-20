@@ -1,17 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/src/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>UI</title>
-  <script type="module" crossorigin src="./assets/index.b8e72b46.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Illenium Appearance</title>
+  <link rel="stylesheet" href="assets/style.css" />
 </head>
-
 <body>
-    <div id="root"></div>
-    
+  <article class="leaderboard hidden" id="appearance-app">
+    <header id="header1">
+      <span id="header-title">
+        <span id="header-icon">🧥</span>
+        <span id="header-name">Clothing Customizer</span>
+      </span>
+      <span id="header-actions">
+        <button id="btn-save">Save</button>
+        <button id="btn-exit">Cancel</button>
+      </span>
+    </header>
+    <header id="header2">
+      <div class="leaderboard__icon" id="logo">IA</div>
+      <h1 class="leaderboard__title" id="section-title">
+        <span class="leaderboard__title--top" id="section-title-top">Clothing</span>
+        <span class="leaderboard__title--bottom" id="section-title-bottom">Select a category below</span>
+      </h1>
+      <div class="header-secondary">
+        <button class="camera-btn" data-camera="head">Head Cam</button>
+        <button class="camera-btn" data-camera="body">Body Cam</button>
+        <button class="camera-btn" data-camera="bottom">Leg Cam</button>
+        <button class="rotate-btn" data-rotate="left">⟲</button>
+        <button class="rotate-btn" data-rotate="right">⟳</button>
+        <button id="btn-turn">Flip</button>
+      </div>
+    </header>
+    <nav id="section-nav">
+      <button class="nav-btn active" data-section="clothing">Clothes</button>
+      <button class="nav-btn" data-section="props">Accessories</button>
+      <button class="nav-btn" data-section="appearance">Appearance</button>
+    </nav>
+    <main class="leaderboard__profiles" id="clothemain"></main>
+    <div id="panel-extra"></div>
+  </article>
+  <script type="module" src="assets/app.js"></script>
 </body>
-
 </html>
