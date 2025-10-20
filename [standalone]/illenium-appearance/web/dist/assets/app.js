@@ -25,9 +25,15 @@ const state = {
   storeCache: {
     items: [],
     type: null,
+    visibleCount: 0,
+    totalCount: 0,
   },
   cartVisible: false,
   dragOffset: { x: 0, y: 0 },
+  ui: {
+    layout: 'grid',
+    density: 'comfortable',
+  },
 };
 
 const APP_SIZE_LIMITS = {
@@ -131,6 +137,11 @@ function formatCurrency(value) {
   return `$${amount.toLocaleString()}`;
 }
 
+function formatCount(value) {
+  const numeric = typeof value === 'number' ? value : 0;
+  return Math.max(0, numeric).toLocaleString();
+}
+
 function resetCart() {
   state.cart = [];
   state.cartTotals.items = 0;
@@ -143,6 +154,7 @@ function resetCart() {
     cartPanel.classList.add('collapsed');
   }
   updateCartToggleButton();
+  refreshStoreOverview();
 }
 
 function getAppContainer() {
@@ -1123,17 +1135,34 @@ function renderStore(items, type) {
 
   const layout = document.createElement('div');
   layout.className = 'store-layout';
+  layout.dataset.view = state.ui.layout;
+  layout.dataset.density = state.ui.density;
 
   const controls = createStoreControls(items, type);
   layout.appendChild(controls);
 
+  const filteredItems = filterStoreItems(items);
+  state.storeCache.visibleCount = filteredItems.length;
+  state.storeCache.totalCount = items.length;
+  calculateCartTotals();
+
+  const overview = createStoreOverview(items, filteredItems);
+  layout.appendChild(overview);
+
   const body = document.createElement('div');
   body.className = 'store-body';
+  body.classList.add(`store-body--${state.ui.layout}`);
+  if (state.ui.density === 'compact') {
+    body.classList.add('store-body--compact');
+  }
 
   const grid = document.createElement('div');
   grid.className = 'store-grid';
+  grid.classList.add(`store-grid--${state.ui.layout}`);
+  if (state.ui.density === 'compact') {
+    grid.classList.add('store-grid--compact');
+  }
 
-  const filteredItems = filterStoreItems(items);
   if (!filteredItems.length) {
     const empty = document.createElement('div');
     empty.className = 'store-empty';
@@ -1147,7 +1176,6 @@ function renderStore(items, type) {
   }
 
   body.appendChild(grid);
-  calculateCartTotals();
   const cartPanel = renderCartPanel();
   cartPanel.classList.toggle('collapsed', !state.cartVisible);
   body.appendChild(cartPanel);
@@ -1155,6 +1183,7 @@ function renderStore(items, type) {
   container.appendChild(layout);
   updateCheckoutButton();
   updateCartToggleButton();
+  refreshStoreOverview(filteredItems.length, items.length);
 }
 
 function createStoreControls(items, type) {
@@ -1207,6 +1236,82 @@ function createStoreControls(items, type) {
   });
   filterGroup.appendChild(favoritesToggle);
 
+  const viewControls = document.createElement('div');
+  viewControls.className = 'store-view-controls';
+  const viewLabel = document.createElement('span');
+  viewLabel.className = 'store-controls__label';
+  viewLabel.textContent = 'View';
+  viewControls.appendChild(viewLabel);
+
+  const viewButtons = document.createElement('div');
+  viewButtons.className = 'toggle-button-group';
+
+  const gridToggle = document.createElement('button');
+  gridToggle.type = 'button';
+  gridToggle.className = 'toggle-button';
+  gridToggle.innerHTML = '<span class="toggle-button__icon">🔳</span><span>Grid</span>';
+  gridToggle.classList.toggle('active', state.ui.layout === 'grid');
+  gridToggle.addEventListener('click', () => {
+    if (state.ui.layout !== 'grid') {
+      state.ui.layout = 'grid';
+      renderStore(state.storeCache.items, state.storeCache.type);
+    }
+  });
+
+  const listToggle = document.createElement('button');
+  listToggle.type = 'button';
+  listToggle.className = 'toggle-button';
+  listToggle.innerHTML = '<span class="toggle-button__icon">📋</span><span>List</span>';
+  listToggle.classList.toggle('active', state.ui.layout === 'list');
+  listToggle.addEventListener('click', () => {
+    if (state.ui.layout !== 'list') {
+      state.ui.layout = 'list';
+      renderStore(state.storeCache.items, state.storeCache.type);
+    }
+  });
+
+  viewButtons.appendChild(gridToggle);
+  viewButtons.appendChild(listToggle);
+  viewControls.appendChild(viewButtons);
+
+  const densityControls = document.createElement('div');
+  densityControls.className = 'store-density-controls';
+  const densityLabel = document.createElement('span');
+  densityLabel.className = 'store-controls__label';
+  densityLabel.textContent = 'Density';
+  densityControls.appendChild(densityLabel);
+
+  const densityButtons = document.createElement('div');
+  densityButtons.className = 'toggle-button-group';
+
+  const comfortToggle = document.createElement('button');
+  comfortToggle.type = 'button';
+  comfortToggle.className = 'toggle-button';
+  comfortToggle.innerHTML = '<span class="toggle-button__icon">🛋️</span><span>Comfort</span>';
+  comfortToggle.classList.toggle('active', state.ui.density === 'comfortable');
+  comfortToggle.addEventListener('click', () => {
+    if (state.ui.density !== 'comfortable') {
+      state.ui.density = 'comfortable';
+      renderStore(state.storeCache.items, state.storeCache.type);
+    }
+  });
+
+  const compactToggle = document.createElement('button');
+  compactToggle.type = 'button';
+  compactToggle.className = 'toggle-button';
+  compactToggle.innerHTML = '<span class="toggle-button__icon">📦</span><span>Compact</span>';
+  compactToggle.classList.toggle('active', state.ui.density === 'compact');
+  compactToggle.addEventListener('click', () => {
+    if (state.ui.density !== 'compact') {
+      state.ui.density = 'compact';
+      renderStore(state.storeCache.items, state.storeCache.type);
+    }
+  });
+
+  densityButtons.appendChild(comfortToggle);
+  densityButtons.appendChild(compactToggle);
+  densityControls.appendChild(densityButtons);
+
   const sortWrapper = document.createElement('div');
   sortWrapper.className = 'store-sort';
   const sortLabel = document.createElement('label');
@@ -1228,22 +1333,19 @@ function createStoreControls(items, type) {
 
   const resetButton = document.createElement('button');
   resetButton.className = 'store-reset';
+  resetButton.type = 'button';
   resetButton.textContent = 'Reset Filters';
   resetButton.addEventListener('click', () => {
     resetFilters();
     renderStore(state.storeCache.items, state.storeCache.type);
   });
 
-  const resultInfo = document.createElement('div');
-  resultInfo.className = 'store-results';
-  const count = filterStoreItems(items).length;
-  resultInfo.textContent = `${count} ${count === 1 ? 'style' : 'styles'} ready to try`;
-
   controls.appendChild(searchWrapper);
   controls.appendChild(filterGroup);
+  controls.appendChild(viewControls);
+  controls.appendChild(densityControls);
   controls.appendChild(sortWrapper);
   controls.appendChild(resetButton);
-  controls.appendChild(resultInfo);
 
   return controls;
 }
@@ -1252,6 +1354,12 @@ function buildStoreCard(item) {
   const card = document.createElement('article');
   card.className = 'store-card';
   card.dataset.itemId = item.id;
+  if (state.ui.layout === 'list') {
+    card.classList.add('store-card--list');
+  }
+  if (state.ui.density === 'compact') {
+    card.classList.add('store-card--compact');
+  }
 
   const header = document.createElement('header');
   header.className = 'store-card__header';
@@ -1384,6 +1492,238 @@ function renderCartPanel() {
   return panel;
 }
 
+function describeLayoutPreferences() {
+  const layoutLabel = state.ui.layout === 'list' ? 'List view' : 'Grid view';
+  const densityLabel = state.ui.density === 'compact' ? 'Compact spacing' : 'Comfort spacing';
+  return `${layoutLabel} • ${densityLabel}`;
+}
+
+function createOverviewStat(label, valueId, valueText, description, secondaryId, secondaryText) {
+  const stat = document.createElement('article');
+  stat.className = 'store-overview__stat';
+
+  const statLabel = document.createElement('span');
+  statLabel.className = 'store-overview__stat-label';
+  statLabel.textContent = label;
+
+  const statValue = document.createElement('strong');
+  statValue.className = 'store-overview__stat-value';
+  statValue.id = valueId;
+  statValue.textContent = valueText;
+
+  stat.appendChild(statLabel);
+  stat.appendChild(statValue);
+
+  if (secondaryId) {
+    const secondary = document.createElement('span');
+    secondary.className = 'store-overview__stat-subvalue';
+    secondary.id = secondaryId;
+    secondary.textContent = secondaryText;
+    stat.appendChild(secondary);
+  }
+
+  const statDescription = document.createElement('span');
+  statDescription.className = 'store-overview__stat-description';
+  statDescription.textContent = description;
+  stat.appendChild(statDescription);
+
+  return stat;
+}
+
+function createStoreOverview(allItems, visibleItems) {
+  const overview = document.createElement('section');
+  overview.className = 'store-overview';
+  overview.id = 'store-summary';
+
+  const stats = document.createElement('div');
+  stats.className = 'store-overview__stats';
+
+  const visibleLabel = visibleItems.length === 1 ? 'style displayed' : 'styles displayed';
+  const visibleStat = createOverviewStat('Showing', 'store-stat-visible', formatCount(visibleItems.length), visibleLabel);
+  stats.appendChild(visibleStat);
+
+  const catalogLabel = allItems.length === 1 ? 'total item' : 'total items';
+  const catalogStat = createOverviewStat('Catalog', 'store-stat-total', formatCount(allItems.length), catalogLabel);
+  stats.appendChild(catalogStat);
+
+  const cartLabel = state.cartTotals.items === 1 ? 'item in bag' : 'items in bag';
+  const cartStat = createOverviewStat(
+    'Bag',
+    'store-stat-cart',
+    formatCount(state.cartTotals.items),
+    cartLabel,
+    'store-stat-cart-total',
+    formatCurrency(state.cartTotals.cost)
+  );
+  const cartToggle = document.createElement('button');
+  cartToggle.type = 'button';
+  cartToggle.id = 'store-summary-cart-toggle';
+  cartToggle.className = 'store-overview__cart-action';
+  cartToggle.textContent = state.cartVisible ? 'Hide Cart' : 'Open Cart';
+  cartToggle.addEventListener('click', () => toggleCartPanel());
+  cartStat.appendChild(cartToggle);
+  stats.appendChild(cartStat);
+
+  const favoritesLabel = state.favorites.size === 1 ? 'saved look' : 'saved looks';
+  const favoritesStat = createOverviewStat(
+    'Favorites',
+    'store-stat-favorites',
+    formatCount(state.favorites.size),
+    favoritesLabel
+  );
+  stats.appendChild(favoritesStat);
+
+  overview.appendChild(stats);
+
+  const filterRow = document.createElement('div');
+  filterRow.className = 'store-overview__filters-row';
+
+  const filterLabel = document.createElement('span');
+  filterLabel.className = 'store-controls__label';
+  filterLabel.textContent = 'Filters';
+  filterRow.appendChild(filterLabel);
+
+  const filterContainer = document.createElement('div');
+  filterContainer.className = 'store-overview__filters';
+  filterContainer.id = 'store-active-filters';
+  filterRow.appendChild(filterContainer);
+
+  const layoutSummary = document.createElement('span');
+  layoutSummary.className = 'store-overview__layout';
+  layoutSummary.id = 'store-layout-summary';
+  layoutSummary.textContent = describeLayoutPreferences();
+  filterRow.appendChild(layoutSummary);
+
+  const clearButton = document.createElement('button');
+  clearButton.type = 'button';
+  clearButton.id = 'store-clear-filters';
+  clearButton.className = 'store-overview__clear hidden';
+  clearButton.textContent = 'Clear All';
+  clearButton.addEventListener('click', () => {
+    resetFilters();
+    renderStore(state.storeCache.items, state.storeCache.type);
+  });
+  filterRow.appendChild(clearButton);
+
+  overview.appendChild(filterRow);
+
+  return overview;
+}
+
+function getActiveFilterDescriptors() {
+  const descriptors = [];
+  const query = state.filters.query.trim();
+  if (query) {
+    descriptors.push({ type: 'query', label: `Search • "${query}"`, icon: '🔍' });
+  }
+  for (const category of state.filters.categories) {
+    descriptors.push({ type: 'category', value: category, label: category, icon: '🏷️' });
+  }
+  if (state.filters.favoritesOnly) {
+    descriptors.push({ type: 'favorites', label: 'Favorites only', icon: '★' });
+  }
+  return descriptors;
+}
+
+function handleFilterChipInteraction(descriptor) {
+  switch (descriptor.type) {
+    case 'query':
+      state.filters.query = '';
+      break;
+    case 'category':
+      if (descriptor.value) {
+        state.filters.categories.delete(descriptor.value);
+      }
+      break;
+    case 'favorites':
+      state.filters.favoritesOnly = false;
+      break;
+    default:
+      break;
+  }
+  renderStore(state.storeCache.items, state.storeCache.type);
+}
+
+function updateActiveFilterDisplay() {
+  const container = document.getElementById('store-active-filters');
+  const clearButton = document.getElementById('store-clear-filters');
+  if (!container) return;
+
+  container.innerHTML = '';
+  const descriptors = getActiveFilterDescriptors();
+
+  if (!descriptors.length) {
+    const empty = document.createElement('span');
+    empty.className = 'store-overview__filters-empty';
+    empty.textContent = 'Browsing entire wardrobe';
+    container.appendChild(empty);
+    if (clearButton) {
+      clearButton.classList.add('hidden');
+    }
+    return;
+  }
+
+  for (const descriptor of descriptors) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'store-overview__filter-chip';
+    chip.innerHTML = `
+      <span class="store-overview__filter-icon">${descriptor.icon}</span>
+      <span class="store-overview__filter-text">${descriptor.label}</span>
+      <span class="store-overview__filter-remove">✕</span>`;
+    chip.addEventListener('click', () => handleFilterChipInteraction(descriptor));
+    container.appendChild(chip);
+  }
+
+  if (clearButton) {
+    clearButton.classList.remove('hidden');
+  }
+}
+
+function refreshStoreSummaryMetrics(visibleCount, totalCount) {
+  const summary = document.getElementById('store-summary');
+  if (!summary) return;
+
+  const visibleValue = document.getElementById('store-stat-visible');
+  const totalValue = document.getElementById('store-stat-total');
+  const cartValue = document.getElementById('store-stat-cart');
+  const cartTotal = document.getElementById('store-stat-cart-total');
+  const favoritesValue = document.getElementById('store-stat-favorites');
+  const cartToggle = document.getElementById('store-summary-cart-toggle');
+  const layoutSummary = document.getElementById('store-layout-summary');
+
+  const visible = typeof visibleCount === 'number' ? visibleCount : state.storeCache.visibleCount ?? 0;
+  const total = typeof totalCount === 'number' ? totalCount : state.storeCache.totalCount ?? state.storeCache.items.length ?? 0;
+
+  if (visibleValue) {
+    visibleValue.textContent = formatCount(visible);
+  }
+  if (totalValue) {
+    totalValue.textContent = formatCount(total);
+  }
+  if (cartValue) {
+    cartValue.textContent = formatCount(state.cartTotals.items);
+  }
+  if (cartTotal) {
+    cartTotal.textContent = formatCurrency(state.cartTotals.cost);
+  }
+  if (favoritesValue) {
+    favoritesValue.textContent = formatCount(state.favorites.size);
+  }
+  if (cartToggle) {
+    cartToggle.textContent = state.cartVisible ? 'Hide Cart' : 'Open Cart';
+  }
+  if (layoutSummary) {
+    layoutSummary.textContent = describeLayoutPreferences();
+  }
+}
+
+function refreshStoreOverview(visibleCount, totalCount) {
+  refreshStoreSummaryMetrics(visibleCount, totalCount);
+  updateActiveFilterDisplay();
+}
+
+
 function calculateCartTotals() {
   let total = 0;
   for (const entry of state.cart) {
@@ -1496,6 +1836,7 @@ function addToCart(item, button) {
   calculateCartTotals();
   updateCartPanel();
   updateCheckoutButton();
+  refreshStoreOverview();
 
   if (button) {
     button.textContent = 'In Bag';
@@ -1510,6 +1851,7 @@ function removeFromCart(itemId) {
   calculateCartTotals();
   updateCartPanel();
   updateCheckoutButton();
+  refreshStoreOverview();
 
   const button = document.querySelector(`.store-card__action[data-item-id="${itemId}"]`);
   if (button) {
@@ -1538,6 +1880,7 @@ function toggleFavorite(itemId, button) {
   if (state.filters.favoritesOnly) {
     renderStore(state.storeCache.items, state.storeCache.type);
   }
+  refreshStoreOverview();
 }
 
 function updateFavoriteButtonState(itemId, button) {
@@ -1610,6 +1953,7 @@ function toggleCartPanel(force) {
   }
   ensureCartPanelVisibility();
   updateCartToggleButton();
+  refreshStoreOverview();
 }
 
 function handleRangeInput(event) {
