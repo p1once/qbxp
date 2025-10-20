@@ -39,20 +39,7 @@ body::before {
 }
 
 body.app-visible::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(52vw, 680px);
-  background: radial-gradient(circle at top right, rgba(29, 46, 74, 0.88), rgba(9, 13, 20, 0.92));
-  pointer-events: none;
-  transition: opacity 0.3s ease, width 0.3s ease, transform 0.3s ease;
-  transform: translate(var(--drag-x, 0px), var(--drag-y, 0px));
-}
-
-body.app-visible.peek-mode::before {
-  opacity: 0;
+  content: none;
 }
 
 .hidden {
@@ -60,6 +47,7 @@ body.app-visible.peek-mode::before {
 }
 
 .leaderboard {
+  position: relative;
   width: min(50vw, 900px);
   max-height: 92vh;
   background: var(--panel-bg);
@@ -69,6 +57,8 @@ body.app-visible.peek-mode::before {
   border: 1px solid rgba(59, 161, 255, 0.2);
   display: flex;
   flex-direction: column;
+  min-width: max(320px, min(640px, calc(100vw - 48px)));
+  min-height: max(360px, min(520px, calc(100vh - 48px)));
   transition: width 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
   transform: translate(calc(var(--drag-x, 0px) + var(--peek-offset-x, 0px)), calc(var(--drag-y, 0px) + var(--peek-offset-y, 0px)));
 }
@@ -178,6 +168,54 @@ body.dragging-app .drag-handle {
 
 .drag-handle button {
   cursor: pointer;
+}
+
+body.resizing-app {
+  cursor: se-resize;
+}
+
+body.resizing-app * {
+  user-select: none;
+}
+
+.resize-handle {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(59, 161, 255, 0.22);
+  border: 1px solid rgba(59, 161, 255, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  pointer-events: auto;
+  cursor: se-resize;
+  touch-action: none;
+  transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+  z-index: 25;
+}
+
+.resize-handle::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-bottom: 2px solid rgba(243, 245, 250, 0.8);
+  border-right: 2px solid rgba(243, 245, 250, 0.8);
+  border-radius: 2px;
+  opacity: 0.8;
+  transform: translate(-2px, -2px);
+}
+
+.resize-handle:hover {
+  background: rgba(59, 161, 255, 0.35);
+  border-color: rgba(59, 161, 255, 0.65);
+}
+
+.resize-handle:active {
+  background: rgba(59, 161, 255, 0.45);
+  border-color: rgba(59, 161, 255, 0.85);
 }
 
 #header1 {

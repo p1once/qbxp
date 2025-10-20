@@ -30,6 +30,14 @@ const state = {
   dragOffset: { x: 0, y: 0 },
 };
 
+const APP_SIZE_LIMITS = {
+  minWidth: 640,
+  minHeight: 520,
+  maxWidth: 1280,
+  maxHeight: 1080,
+  viewportMargin: 48,
+};
+
 const componentMap = new Map([
   [1, { key: 'mask', label: 'Mask', hasTexture: true, configKey: 'masks' }],
   [2, { key: 'hair', label: 'Hair', hasTexture: true }],
@@ -137,6 +145,60 @@ function resetCart() {
   updateCartToggleButton();
 }
 
+function getAppContainer() {
+  return document.getElementById('appearance-app');
+}
+
+function clampAppSize(width, height) {
+  const viewportWidth = Math.max(window.innerWidth || 0, 320);
+  const viewportHeight = Math.max(window.innerHeight || 0, 320);
+  const availableWidth = Math.max(viewportWidth - APP_SIZE_LIMITS.viewportMargin, 320);
+  const availableHeight = Math.max(viewportHeight - APP_SIZE_LIMITS.viewportMargin, 320);
+  const maxWidth = Math.min(APP_SIZE_LIMITS.maxWidth, availableWidth);
+  const maxHeight = Math.min(APP_SIZE_LIMITS.maxHeight, availableHeight);
+  const minWidth = Math.min(APP_SIZE_LIMITS.minWidth, maxWidth);
+  const minHeight = Math.min(APP_SIZE_LIMITS.minHeight, maxHeight);
+  const nextWidth = Math.min(Math.max(width, minWidth), maxWidth);
+  const nextHeight = Math.min(Math.max(height, minHeight), maxHeight);
+  return { width: nextWidth, height: nextHeight };
+}
+
+function applyAppSize(width, height) {
+  const app = getAppContainer();
+  if (!app) {
+    return;
+  }
+  const rect = app.getBoundingClientRect();
+  const hasWidth = typeof width === 'number' && !Number.isNaN(width);
+  const hasHeight = typeof height === 'number' && !Number.isNaN(height);
+  const targetWidth = hasWidth ? width : rect.width;
+  const targetHeight = hasHeight ? height : rect.height;
+  const { width: clampedWidth, height: clampedHeight } = clampAppSize(targetWidth, targetHeight);
+  if (hasWidth || Math.abs(clampedWidth - rect.width) > 0.5) {
+    app.style.width = `${clampedWidth}px`;
+  }
+  if (hasHeight || Math.abs(clampedHeight - rect.height) > 0.5) {
+    app.style.height = `${clampedHeight}px`;
+  }
+}
+
+function resetAppSize() {
+  const app = getAppContainer();
+  if (!app) {
+    return;
+  }
+  app.style.width = '';
+  app.style.height = '';
+}
+
+function ensureAppWithinViewport() {
+  const app = getAppContainer();
+  if (!app) {
+    return;
+  }
+  applyAppSize();
+}
+
 function getCategoriesFromItems(items) {
   const categories = new Set();
   for (const item of items) {
@@ -217,6 +279,8 @@ function resetDragPosition() {
 
 let dragSession = null;
 let dragListenersInitialized = false;
+let resizeSession = null;
+let resizeHandleInitialized = false;
 
 function handleDragPointerMove(event) {
   if (!dragSession || event.pointerId !== dragSession.pointerId) {
@@ -307,6 +371,87 @@ function setupDragControls() {
   dragListenersInitialized = true;
 }
 
+function handleResizePointerMove(event) {
+  if (!resizeSession || event.pointerId !== resizeSession.pointerId) {
+    return;
+  }
+  const deltaX = event.clientX - resizeSession.startX;
+  const deltaY = event.clientY - resizeSession.startY;
+  applyAppSize(resizeSession.baseWidth + deltaX, resizeSession.baseHeight + deltaY);
+}
+
+function finishResize(event) {
+  if (!resizeSession) {
+    return;
+  }
+  if (event && event.pointerId !== resizeSession.pointerId) {
+    return;
+  }
+  if (resizeSession.handle && resizeSession.handle.releasePointerCapture) {
+    try {
+      resizeSession.handle.releasePointerCapture(resizeSession.pointerId);
+    } catch (err) {
+      // ignore inability to release capture
+    }
+  }
+  window.removeEventListener('pointermove', handleResizePointerMove);
+  window.removeEventListener('pointerup', finishResize);
+  window.removeEventListener('pointercancel', finishResize);
+  document.body.classList.remove('resizing-app');
+  resizeSession = null;
+}
+
+function handleResizePointerDown(event) {
+  if (!state.visible) {
+    return;
+  }
+  if (event.pointerType === 'mouse' && event.button !== 0) {
+    return;
+  }
+  const app = getAppContainer();
+  if (!app || app.classList.contains('hidden')) {
+    return;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  if (resizeSession) {
+    finishResize();
+  }
+  const rect = app.getBoundingClientRect();
+  const handle = event.currentTarget;
+  resizeSession = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    baseWidth: rect.width,
+    baseHeight: rect.height,
+    handle,
+  };
+  if (handle && handle.setPointerCapture) {
+    try {
+      handle.setPointerCapture(event.pointerId);
+    } catch (err) {
+      // ignore if pointer capture fails
+    }
+  }
+  document.body.classList.add('resizing-app');
+  window.addEventListener('pointermove', handleResizePointerMove);
+  window.addEventListener('pointerup', finishResize);
+  window.addEventListener('pointercancel', finishResize);
+}
+
+function setupResizeHandle() {
+  if (resizeHandleInitialized) {
+    return;
+  }
+  const handle = document.getElementById('resize-handle');
+  if (!handle) {
+    return;
+  }
+  handle.addEventListener('pointerdown', handleResizePointerDown);
+  resizeHandleInitialized = true;
+}
+
 function showApp() {
   if (state.visible) return;
   state.visible = true;
@@ -319,6 +464,7 @@ function showApp() {
   if (app) {
     app.classList.remove('hidden');
     app.setAttribute('aria-hidden', 'false');
+    ensureAppWithinViewport();
   }
   const peekToggle = document.getElementById('peek-toggle');
   if (peekToggle) {
@@ -336,12 +482,14 @@ function showApp() {
 function hideApp() {
   state.visible = false;
   finishDrag();
+  finishResize();
   document.body.classList.remove('dragging-app');
   document.body.classList.remove('compact-layout', 'peek-mode', 'app-visible');
   const app = document.getElementById('appearance-app');
   if (app) {
     app.classList.add('hidden');
     app.setAttribute('aria-hidden', 'true');
+    resetAppSize();
   }
   const peekToggle = document.getElementById('peek-toggle');
   if (peekToggle) {
@@ -1772,7 +1920,15 @@ window.addEventListener('message', (event) => {
   }
 });
 
+window.addEventListener('resize', () => {
+  if (!state.visible) {
+    return;
+  }
+  ensureAppWithinViewport();
+});
+
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   setupDragControls();
+  setupResizeHandle();
 });
