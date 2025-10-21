@@ -1,24 +1,77 @@
 local L0_1, L1_1
+
+local function normalizeHashValue(A0_2)
+  local L1_2, L2_2, L3_2, L4_2
+  if nil == A0_2 then
+    return nil
+  end
+  L1_2 = type
+  L2_2 = A0_2
+  L1_2 = L1_2(L2_2)
+  if "string" == L1_2 then
+    return A0_2
+  end
+  if "number" == L1_2 then
+    L2_2 = tostring
+    L3_2 = A0_2
+    return L2_2(L3_2)
+  end
+  if "table" == L1_2 then
+    L2_2 = {"name_hash", "hash", "value", "id"}
+    L3_2 = 1
+    L4_2 = #L2_2
+    for L3_2 = L3_2, L4_2 do
+      local L5_2
+      L5_2 = L2_2[L3_2]
+      if A0_2[L5_2] ~= nil then
+        local L6_2
+        L6_2 = normalizeHashValue
+        local L7_2
+        L7_2 = A0_2[L5_2]
+        L6_2 = L6_2(L7_2)
+        if L6_2 then
+          return L6_2
+        end
+      end
+    end
+    if A0_2[1] ~= nil then
+      L2_2 = normalizeHashValue
+      L3_2 = A0_2[1]
+      return L2_2(L3_2)
+    end
+  end
+  return nil
+end
 function L0_1(A0_2)
   local L1_2, L2_2, L3_2
-  L1_2 = string
-  L1_2 = L1_2.find
+  L1_2 = normalizeHashValue
   L2_2 = A0_2
+  L1_2 = L1_2(L2_2)
+  if nil == L1_2 then
+    return false
+  end
+  L2_2 = string
+  L2_2 = L2_2.find
   L3_2 = "_"
-  L1_2 = L1_2(L2_2, L3_2)
-  L1_2 = nil ~= L1_2
-  return L1_2
+  L2_2 = L2_2(L1_2, L3_2)
+  L2_2 = nil ~= L2_2
+  return L2_2
 end
 containsUnderscore = L0_1
 function L0_1(A0_2)
   local L1_2, L2_2, L3_2
-  L1_2 = string
-  L1_2 = L1_2.find
+  L1_2 = normalizeHashValue
   L2_2 = A0_2
+  L1_2 = L1_2(L2_2)
+  if nil == L1_2 then
+    return false
+  end
+  L2_2 = string
+  L2_2 = L2_2.find
   L3_2 = "%-%-"
-  L1_2 = L1_2(L2_2, L3_2)
-  L1_2 = nil ~= L1_2
-  return L1_2
+  L2_2 = L2_2(L1_2, L3_2)
+  L2_2 = nil ~= L2_2
+  return L2_2
 end
 containsDoubleDash = L0_1
 function L0_1(A0_2, A1_2)
@@ -26,6 +79,13 @@ function L0_1(A0_2, A1_2)
   if nil == A1_2 then
     A1_2 = "%s"
   end
+  L2_2 = normalizeHashValue
+  L3_2 = A0_2
+  L2_2 = L2_2(L3_2)
+  if nil == L2_2 then
+    return {}
+  end
+  A0_2 = L2_2
   L2_2 = {}
   L3_2 = string
   L3_2 = L3_2.gmatch
@@ -47,6 +107,13 @@ end
 mysplit = L0_1
 function L0_1(A0_2)
   local L1_2, L2_2, L3_2, L4_2, L5_2, L6_2
+  L1_2 = normalizeHashValue
+  L2_2 = A0_2
+  L1_2 = L1_2(L2_2)
+  if nil == L1_2 then
+    return A0_2
+  end
+  A0_2 = L1_2
   L1_2 = string
   L1_2 = L1_2.sub
   L2_2 = A0_2
@@ -73,6 +140,13 @@ function L0_1(A0_2, A1_2)
   if nil == A1_2 then
     A1_2 = "%s"
   end
+  L2_2 = normalizeHashValue
+  L3_2 = A0_2
+  L2_2 = L2_2(L3_2)
+  if nil == L2_2 then
+    return {}
+  end
+  A0_2 = L2_2
   L2_2 = {}
   L3_2 = string
   L3_2 = L3_2.gmatch
@@ -228,6 +302,13 @@ GetUsableClothingHash = L0_1
 function L0_1(A0_2, A1_2)
   local L2_2, L3_2, L4_2, L5_2, L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2
   L2_2 = {}
+  L3_2 = normalizeHashValue
+  L4_2 = A1_2.name_hash
+  L3_2 = L3_2(L4_2)
+  if nil == L3_2 then
+    return L2_2
+  end
+  A1_2.name_hash = L3_2
   L3_2 = containsDoubleDash
   L4_2 = A1_2.name_hash
   L3_2 = L3_2(L4_2)
@@ -376,6 +457,13 @@ UsablePropHashToData = L0_1
 function L0_1(A0_2, A1_2, A2_2)
   local L3_2, L4_2, L5_2, L6_2, L7_2, L8_2, L9_2, L10_2, L11_2, L12_2, L13_2, L14_2, L15_2
   L3_2 = {}
+  L4_2 = normalizeHashValue
+  L5_2 = A1_2.name_hash
+  L4_2 = L4_2(L5_2)
+  if nil == L4_2 then
+    return L3_2
+  end
+  A1_2.name_hash = L4_2
   L4_2 = containsDoubleDash
   L5_2 = A1_2.name_hash
   L4_2 = L4_2(L5_2)
