@@ -30,11 +30,31 @@ lib.callback.register('qbx_core:server:getCharacters', function(source)
     return storage.fetchAllPlayerEntities(license2, license), getAllowedAmountOfCharacters(license2, license)
 end)
 
+local function resolveModel(model)
+    if not model then return nil end
+
+    local modelType = type(model)
+    if modelType == 'number' then
+        return model
+    end
+
+    if modelType == 'string' then
+        local numeric = tonumber(model)
+        if numeric then
+            return numeric
+        end
+
+        return joaat(model)
+    end
+
+    return nil
+end
+
 lib.callback.register('qbx_core:server:getPreviewPedData', function(_, citizenId)
     local ped = storage.fetchPlayerSkin(citizenId)
     if not ped then return end
 
-    return ped.skin, ped.model and joaat(ped.model)
+    return ped.skin, resolveModel(ped.model)
 end)
 
 lib.callback.register('qbx_core:server:loadCharacter', function(source, citizenId)
