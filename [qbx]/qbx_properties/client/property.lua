@@ -8,6 +8,7 @@ local isPropertyRental = false
 local interactions
 local isConcealing = false
 local concealWhitelist = {}
+local propertyClothingOpen = false
 local function prepareKeyMenu()
     local keyholders = lib.callback.await('qbx_properties:callback:requestKeyHolders')
     local options = {
@@ -179,18 +180,11 @@ local function checkInteractions()
         ['clothing'] = function(coords)
             qbx.drawText3d({ coords = coords, text = locale('drawtext.clothing') })
             if IsControlJustPressed(0, 38) then
-                exports['illenium-appearance']:startPlayerCustomization(function(appearance)
-                    if appearance then
-                        TriggerServerEvent("illenium-appearance:server:saveAppearance", appearance)
-                    end
-                end, {
-                    components = true, componentConfig = { masks = true, upperBody = true, lowerBody = true, bags = true, shoes = true, scarfAndChains = true, bodyArmor = true, shirts = true, decals = true, jackets = true },
-                    props = true, propConfig = { hats = true, glasses = true, ear = true, watches = true, bracelets = true },
-                    enableExit = true,
-                })
+                propertyClothingOpen = true
+                TriggerEvent('qb-clothing:client:openMenu')
             end
             if IsControlJustPressed(0, 47) then
-                TriggerEvent('illenium-appearance:client:openOutfitMenu')
+                TriggerEvent('qb-clothing:client:openOutfitMenu')
             end
         end,
         ['logout'] = function(coords)
@@ -239,6 +233,13 @@ RegisterNetEvent('qbx_properties:client:updateInteractions', function(interactio
     hideExterior(interiorString)
 end)
 
+AddEventHandler('rcore_clothing:onClothingShopClosed', function()
+    if not propertyClothingOpen then return end
+
+    TriggerServerEvent('qb-clothing:saveSkin')
+    propertyClothingOpen = false
+end)
+
 RegisterNetEvent('qbx_properties:client:createInterior', function(interiorHash, interiorCoords)
     lib.requestModel(interiorHash, 2000)
     interiorShell = CreateObjectNoOffset(interiorHash, interiorCoords.x, interiorCoords.y, interiorCoords.z, false, false, false)
@@ -274,6 +275,7 @@ end)
 RegisterNetEvent('qbx_properties:client:unloadProperty', function()
     DoScreenFadeIn(1000)
     insideProperty = false
+    propertyClothingOpen = false
     if DoesEntityExist(interiorShell) then DeleteEntity(interiorShell) end
     for _, v in pairs(DecorationObjects) do
         if DoesEntityExist(v) then DeleteEntity(v) end

@@ -112,6 +112,15 @@ end
 ---@param citizenId string
 ---@return PlayerSkin?
 local function fetchPlayerSkin(citizenId)
+    local currentOutfit = MySQL.single.await('SELECT ped_model, outfit FROM rcore_clothing_current WHERE identifier = ?', {citizenId})
+    if currentOutfit then
+        return {
+            citizenid = citizenId,
+            model = currentOutfit.ped_model,
+            skin = currentOutfit.outfit,
+        }
+    end
+
     return MySQL.single.await('SELECT * FROM playerskins WHERE citizenid = ? AND active = 1', {citizenId})
 end
 

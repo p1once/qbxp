@@ -102,6 +102,97 @@ local randomPeds = {
     }
 }
 
+local overlayIndexes = {
+    blemishes = 0,
+    beard = 1,
+    eyebrows = 2,
+    ageing = 3,
+    makeUp = 4,
+    blush = 5,
+    complexion = 6,
+    sunDamage = 7,
+    lipstick = 8,
+    moleAndFreckles = 9,
+    chestHair = 10,
+    bodyBlemishes = 11,
+}
+
+local overlayColorTypes = {
+    beard = 1,
+    eyebrows = 1,
+    chestHair = 1,
+    lipstick = 2,
+    makeUp = 2,
+    blush = 2,
+}
+
+local function applyOverlay(ped, name, data)
+    local overlayIndex = overlayIndexes[name]
+    if not overlayIndex or not data then return end
+
+    local style = data.style or 0
+    local opacity = data.opacity or 0.0
+    SetPedHeadOverlay(ped, overlayIndex, style, opacity)
+
+    local colorType = overlayColorTypes[name]
+    if not colorType then return end
+
+    local primaryColor = data.color or 0
+    local secondaryColor = data.secondColor or primaryColor
+    SetPedHeadOverlayColor(ped, overlayIndex, colorType, primaryColor, secondaryColor)
+end
+
+local function applyRandomPed(pedData)
+    local ped = PlayerPedId()
+
+    if pedData.headBlend then
+        local blend = pedData.headBlend
+        SetPedHeadBlendData(
+            ped,
+            blend.shapeFirst or 0,
+            blend.shapeSecond or 0,
+            blend.shapeThird or 0,
+            blend.skinFirst or 0,
+            blend.skinSecond or 0,
+            blend.skinThird or 0,
+            blend.shapeMix or 0.0,
+            blend.skinMix or 0.0,
+            blend.thirdMix or 0.0,
+            false
+        )
+    end
+
+    if pedData.hair then
+        local hair = pedData.hair
+        SetPedComponentVariation(ped, 2, hair.style or 0, hair.texture or 0, 0)
+        SetPedHairColor(ped, hair.color or 0, hair.highlight or hair.color or 0)
+    end
+
+    if pedData.headOverlays then
+        for name, overlay in pairs(pedData.headOverlays) do
+            applyOverlay(ped, name, overlay)
+        end
+    end
+
+    if pedData.components then
+        for i = 1, #pedData.components do
+            local component = pedData.components[i]
+            SetPedComponentVariation(ped, component.component_id, component.drawable, component.texture, 0)
+        end
+    end
+
+    if pedData.props then
+        for i = 1, #pedData.props do
+            local prop = pedData.props[i]
+            if prop.drawable == -1 then
+                ClearPedProp(ped, prop.prop_id)
+            else
+                SetPedPropIndex(ped, prop.prop_id, prop.drawable, prop.texture, true)
+            end
+        end
+    end
+end
+
 NetworkStartSoloTutorialSession()
 
 local nationalities = {}
@@ -149,11 +240,12 @@ local function destroyPreviewCam()
 end
 
 local function randomPed()
-    local ped = randomPeds[math.random(1, #randomPeds)]
-    lib.requestModel(ped.model, config.loadingModelsTimeout)
-    SetPlayerModel(cache.playerId, ped.model)
-    pcall(function() exports['illenium-appearance']:setPedAppearance(PlayerPedId(), ped) end)
-    SetModelAsNoLongerNeeded(ped.model)
+    local pedData = randomPeds[math.random(1, #randomPeds)]
+    lib.requestModel(pedData.model, config.loadingModelsTimeout)
+    SetPlayerModel(cache.playerId, pedData.model)
+    SetPedDefaultComponentVariation(PlayerPedId())
+    applyRandomPed(pedData)
+    SetModelAsNoLongerNeeded(pedData.model)
 end
 
 ---@param citizenId? string
@@ -164,7 +256,14 @@ local function previewPed(citizenId)
     if model and clothing then
         lib.requestModel(model, config.loadingModelsTimeout)
         SetPlayerModel(cache.playerId, model)
-        pcall(function() exports['illenium-appearance']:setPedAppearance(PlayerPedId(), json.decode(clothing)) end)
+        local appearance = type(clothing) == 'string' and json.decode(clothing) or clothing
+        if appearance then
+            SetPedDefaultComponentVariation(PlayerPedId())
+            pcall(function() exports['rcore_clothing']:setPedSkin(PlayerPedId(), appearance) end)
+        else
+            randomPed()
+            return
+        end
         SetModelAsNoLongerNeeded(model)
     else
         randomPed()
