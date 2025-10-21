@@ -79,46 +79,48 @@ L3_1(L4_1, L5_1)
 L3_1 = RegisterNUICallback
 L4_1 = "close"
 function L5_1(A0_2, A1_2)
-  local L2_2, L3_2, L4_2, L5_2, L6_2, L7_2, L8_2, L9_2
+  local L2_2, L3_2, L4_2, L5_2, L6_2, L7_2, L8_2
   L2_2 = GetCurrentShopConfig
   L2_2 = L2_2()
+  L3_2 = false
   if A0_2 then
-    L3_2 = A0_2.forceClose
-    if L3_2 then
-      goto lbl_9
+    L4_2 = A0_2.forceClose
+    if L4_2 then
+      L3_2 = true
     end
   end
-  L3_2 = false
-  ::lbl_9::
   L4_2 = StopImageDebug
   L4_2()
+  L4_2 = true
   if not L3_2 and L2_2 then
-    L4_2 = L2_2.modifiers
-    if L4_2 then
-      L4_2 = L2_2.modifiers
-      L5_2 = SHOP_MODIFIERS
-      L5_2 = L5_2.CAN_NOT_BE_CLOSED
-      L4_2 = L4_2[L5_2]
-      if L4_2 then
+    L5_2 = L2_2.modifiers
+    if L5_2 then
+      L6_2 = L2_2.modifiers
+      L7_2 = SHOP_MODIFIERS
+      L7_2 = L7_2.CAN_NOT_BE_CLOSED
+      L6_2 = L6_2[L7_2]
+      if L6_2 then
+        L4_2 = false
+      end
     end
   end
-  else
-    L4_2 = SOUNDS_BY_TYPE
-    L4_2 = L4_2.QUIT_UI
-    L5_2 = PlaySoundFrontend
-    L6_2 = -1
-    L7_2 = L4_2.name
-    L8_2 = L4_2.soundset
-    L9_2 = false
-    L5_2(L6_2, L7_2, L8_2, L9_2)
-    L5_2 = CloseNUI
-    L5_2()
-    L5_2 = StartRenderingMarkers
-    L5_2()
+  if L4_2 then
+    L5_2 = SOUNDS_BY_TYPE
+    L5_2 = L5_2.QUIT_UI
+    L6_2 = PlaySoundFrontend
+    L7_2 = -1
+    L8_2 = L5_2.name
+    L5_2 = L5_2.soundset
+    L6_2(L7_2, L8_2, L5_2, false)
+    L6_2 = CloseNUI
+    L6_2()
+    L6_2 = StartRenderingMarkers
+    L6_2()
   end
-  L4_2 = A1_2
-  L5_2 = "ok"
-  L4_2(L5_2)
+  if A1_2 then
+    L5_2 = A1_2
+    L5_2("ok")
+  end
 end
 L3_1(L4_1, L5_1)
 L3_1 = RegisterNUICallback
