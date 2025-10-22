@@ -121,7 +121,6 @@ function L0_1(A0_2)
     L22_2 = 1000000 + L15_2
     L21_2.id = L22_2
     L21_2.gloves = true
-    L21_2.subtype = "gloves"
     L21_2.label = ""
     L21_2.price = nil
     L22_2 = L17_2.drawableId
@@ -138,7 +137,7 @@ function L0_1(A0_2)
     L21_2.colors = ""
     L21_2.category = ""
     L21_2.name_hash = L16_2
-    L21_2.component_id = 33
+    L21_2.component_id = 3
     L21_2.decal_collection_hash = nil
     L21_2.decal_name_hash = nil
     L19_2(L20_2, L21_2)

@@ -6533,3 +6533,23 @@
 {"level":"info","message":"Executed query (\n        SELECT *,\n               UNIX_TIMESTAMP(updatedAt) AS lastActive\n        FROM npwd_match_profiles\n        WHERE identifier = ?\n        LIMIT 1\n\t\t [\"Q479DXR1\"]) in 1.4247ms'","module":"DBInterface","timestamp":"2025-10-22T06:45:34.870Z"}
 {"level":"silly","message":"Response Promise Event phone:getMyProfile:43162863-5e22-46ae-8002-a9df16941fc6 (12.3396ms), Data >>","module":"events","timestamp":"2025-10-22T06:45:34.870Z"}
 {"level":"silly","message":{"data":{"bio":"","createdAt":"2025-10-22T06:45:34.000Z","id":28,"identifier":"Q479DXR1","image":"https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg","job":"","lastActive":1761115534,"lastActiveFormatted":"Wed, 22 Oct 2025 06:45:34 GMT","location":"","name":"Lolo Nuio","tagList":[],"tags":"","updatedAt":"2025-10-22T06:45:34.000Z","viewed":false,"voiceMessage":null},"status":"ok"},"module":"events","timestamp":"2025-10-22T06:45:34.870Z"}
+{"level":"info","message":"Executed query (SELECT id FROM npwd_marketplace_listings WHERE identifier = ? [\"Q479DXR1\"]) in 63.8153ms'","module":"DBInterface","timestamp":"2025-10-22T07:36:02.705Z"}
+{"level":"info","message":"Executed query (DELETE FROM npwd_marketplace_listings WHERE identifier = ? AND reported = 0 [\"Q479DXR1\"]) in 0.6042ms'","module":"DBInterface","timestamp":"2025-10-22T07:36:02.705Z"}
+{"level":"info","message":"Unloaded NPWD Player, source: (1)","module":"player","timestamp":"2025-10-22T07:36:02.706Z"}
+{"level":"debug","message":"Marketplace service started","module":"marketplace","timestamp":"2025-10-22T07:36:11.502Z"}
+{"level":"debug","message":"Call service started","module":"calls","timestamp":"2025-10-22T07:36:11.503Z"}
+{"level":"debug","message":"Player Service started","module":"player","timestamp":"2025-10-22T07:36:11.503Z"}
+{"level":"info","message":"Loading QBX bridge....","timestamp":"2025-10-22T07:36:11.503Z"}
+{"level":"info","message":"QBX bridge initialized","timestamp":"2025-10-22T07:36:11.504Z"}
+{"level":"debug","message":"Boot service started","module":"boot","timestamp":"2025-10-22T07:36:11.504Z"}
+{"level":"debug","message":"Messages service started","module":"messages","timestamp":"2025-10-22T07:36:11.504Z"}
+{"level":"debug","message":"Notes service started","module":"notes","timestamp":"2025-10-22T07:36:11.504Z"}
+{"level":"debug","message":"Contacts service started","module":"contact","timestamp":"2025-10-22T07:36:11.505Z"}
+{"level":"debug","message":"Photo service started","module":"photo","timestamp":"2025-10-22T07:36:11.528Z"}
+{"level":"debug","message":"Twitter service started","module":"twitter","timestamp":"2025-10-22T07:36:11.528Z"}
+{"level":"debug","message":"Match service started","module":"match","timestamp":"2025-10-22T07:36:11.529Z"}
+{"level":"debug","message":"Beginning database schema validation","module":"boot","timestamp":"2025-10-22T07:36:12.348Z"}
+{"level":"info","message":"Successfully started","timestamp":"2025-10-22T07:36:12.357Z"}
+{"level":"info","message":"Executed query (SELECT COUNT(*) as count\n                       FROM information_schema.tables\n                       WHERE table_schema = ?\n                         AND table_name = ? [\"Qbox_EBD514\",\"players\"]) in 67.5189ms'","module":"DBInterface","timestamp":"2025-10-22T07:36:12.417Z"}
+{"level":"info","message":"Executed query (SHOW COLUMNS IN players []) in 5.4083ms'","module":"DBInterface","timestamp":"2025-10-22T07:36:12.422Z"}
+{"level":"debug","message":"Database schema successfully validated","module":"boot","timestamp":"2025-10-22T07:36:12.423Z"}
