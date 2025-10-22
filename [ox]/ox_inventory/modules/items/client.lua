@@ -140,6 +140,13 @@ Item('phone', function(data, slot)
 end)
 
 Item('clothing', function(data, slot)
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
+=======
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 	local metadata = slot.metadata
 
 	if not metadata.drawable then return print('Clothing is missing drawable in metadata') end
@@ -180,10 +187,112 @@ Item('clothing', function(data, slot)
 				end
 
 				-- { component = 4, drawable = 4, texture = 1 } = jeans w/ belt
+<<<<<<< ours
+<<<<<<< ours
+                                SetPedComponentVariation(cache.ped, metadata.component, metadata.drawable, metadata.texture, 0);
+                        end
+                end
+        end)
+end)
+
+RegisterNetEvent('ox_inventory:clothingUnequipped', function(metadata)
+        if type(metadata) ~= 'table' then return end
+
+        if metadata.prop then
+                local currentDrawable = GetPedPropIndex(cache.ped, metadata.prop)
+                local currentTexture = GetPedPropTextureIndex(cache.ped, metadata.prop)
+
+                if metadata.drawable == currentDrawable and metadata.texture == currentTexture then
+                        ClearPedProp(cache.ped, metadata.prop)
+                end
+        elseif metadata.component then
+                local currentDrawable = GetPedDrawableVariation(cache.ped, metadata.component)
+                local currentTexture = GetPedTextureVariation(cache.ped, metadata.component)
+
+                if metadata.drawable == currentDrawable and metadata.texture == currentTexture then
+                        local defaultDrawable = metadata.defaultDrawable
+                        local defaultTexture = metadata.defaultTexture
+
+                        if type(metadata.default) == 'table' then
+                                defaultDrawable = defaultDrawable or metadata.default.drawable
+                                defaultTexture = defaultTexture or metadata.default.texture
+                        end
+
+                        SetPedComponentVariation(cache.ped, metadata.component, defaultDrawable or 0, defaultTexture or 0, 0)
+                end
+        end
+=======
+        local metadata = slot.metadata
+
+        if type(metadata) ~= 'table' then return print('Clothing metadata is missing') end
+
+        metadata.drawable = tonumber(metadata.drawable)
+        metadata.texture = tonumber(metadata.texture)
+        metadata.prop = metadata.prop and tonumber(metadata.prop) or nil
+        metadata.component = metadata.component and tonumber(metadata.component) or nil
+
+        if not metadata.drawable then return print('Clothing is missing drawable in metadata') end
+        if not metadata.texture then return print('Clothing is missing texture in metadata') end
+
+        if metadata.prop then
+                if not SetPedPreloadPropData(cache.ped, metadata.prop, metadata.drawable, metadata.texture) then
+                        return print('Clothing has invalid prop for this ped')
+                end
+        elseif metadata.component then
+                if not IsPedComponentVariationValid(cache.ped, metadata.component, metadata.drawable, metadata.texture) then
+                        return print('Clothing has invalid component for this ped')
+                end
+        else
+                return print('Clothing is missing prop/component id in metadata')
+        end
+
+        ox_inventory:useItem(data, function(response)
+                if not response then return end
+
+                local slotData = response
+                local slotMetadata = slotData.metadata or metadata
+
+                if type(slotMetadata) ~= 'table' then return end
+
+                slotMetadata.drawable = tonumber(slotMetadata.drawable)
+                slotMetadata.texture = tonumber(slotMetadata.texture)
+                slotMetadata.prop = slotMetadata.prop and tonumber(slotMetadata.prop) or nil
+                slotMetadata.component = slotMetadata.component and tonumber(slotMetadata.component) or nil
+
+                if slotMetadata.prop then
+                        local currentProp = GetPedPropIndex(cache.ped, slotMetadata.prop)
+                        local currentTexture = GetPedPropTextureIndex(cache.ped, slotMetadata.prop)
+
+                        if slotMetadata.drawable == currentProp and slotMetadata.texture == currentTexture then
+                                return ClearPedProp(cache.ped, slotMetadata.prop)
+                        end
+
+                        -- { prop = 0, drawable = 2, texture = 1 } = grey beanie
+                        SetPedPropIndex(cache.ped, slotMetadata.prop, slotMetadata.drawable, slotMetadata.texture, false)
+                elseif slotMetadata.component then
+                        local currentDrawable = GetPedDrawableVariation(cache.ped, slotMetadata.component)
+                        local currentTexture = GetPedTextureVariation(cache.ped, slotMetadata.component)
+
+                        if slotMetadata.drawable == currentDrawable and slotMetadata.texture == currentTexture then
+                                return -- item matches (setup defaults so we can strip?)
+                        end
+
+                        -- { component = 4, drawable = 4, texture = 1 } = jeans w/ belt
+                        SetPedComponentVariation(cache.ped, slotMetadata.component, slotMetadata.drawable, slotMetadata.texture, 0)
+                end
+        end)
+>>>>>>> theirs
+=======
+=======
+>>>>>>> theirs
 				SetPedComponentVariation(cache.ped, metadata.component, metadata.drawable, metadata.texture, 0);
 			end
 		end
 	end)
+<<<<<<< ours
+>>>>>>> theirs
+=======
+>>>>>>> theirs
 end)
 
 -----------------------------------------------------------------------------------------------

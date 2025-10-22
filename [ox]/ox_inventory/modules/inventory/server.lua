@@ -1569,6 +1569,11 @@ local function dropItem(source, playerInventory, fromData, data)
     if not fromData then return end
 
 	local toData = table.clone(fromData)
+	local clothingMetadata
+
+	if fromData.name == 'clothing' and fromData.count == data.count and type(fromData.metadata) == 'table' then
+		clothingMetadata = table.clone(fromData.metadata)
+	end
 	toData.slot = data.toSlot
 	toData.count = data.count
 	toData.weight = Inventory.SlotWeight(Items(toData.name), toData)
@@ -1616,6 +1621,10 @@ local function dropItem(source, playerInventory, fromData, data)
 	playerInventory.changed = true
 
 	TriggerClientEvent('ox_inventory:createDrop', -1, dropId, Inventory.Drops[dropId], playerInventory.open and source, slot)
+
+	if clothingMetadata then
+		TriggerClientEvent('ox_inventory:clothingUnequipped', source, clothingMetadata)
+	end
 
 	if server.loglevel > 0 then
 		lib.logger(playerInventory.owner, 'swapSlots', ('%sx %s transferred from "%s" to "%s"'):format(data.count, toData.name, playerInventory.label, dropId))
@@ -1829,6 +1838,16 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 			elseif data.count <= fromData.count then
 				-- Move item to an empty slot
 				toData = table.clone(fromData)
+				local clothingMetadata
+
+				if fromInventory == playerInventory
+					and fromData.name == 'clothing'
+					and data.count == fromData.count
+					and (data.toType == 'drop' or toInventory.type == 'drop')
+					and type(fromData.metadata) == 'table'
+				then
+					clothingMetadata = table.clone(fromData.metadata)
+				end
 				toData.count = data.count
 				toData.slot = data.toSlot
 				toData.weight = Inventory.SlotWeight(Items(toData.name), toData)
@@ -1904,6 +1923,10 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 
 			fromInventory.items[data.fromSlot] = fromData
 			toInventory.items[data.toSlot] = toData
+
+			if clothingMetadata then
+				TriggerClientEvent('ox_inventory:clothingUnequipped', source, clothingMetadata)
+			end
 
 			if fromInventory.changed ~= nil then fromInventory.changed = true end
 			if toInventory.changed ~= nil then toInventory.changed = true end
