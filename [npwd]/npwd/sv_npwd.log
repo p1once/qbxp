@@ -5960,3 +5960,6 @@
 {"level":"silly","message":{"data":{"bio":"","createdAt":"2025-10-22T01:31:25.000Z","id":26,"identifier":"AMVY495F","image":"https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg","job":"","lastActive":1761096685,"lastActiveFormatted":"Wed, 22 Oct 2025 01:31:25 GMT","location":"","name":"Louise Iluze","tagList":[],"tags":"","updatedAt":"2025-10-22T01:31:25.000Z","viewed":false,"voiceMessage":null},"status":"ok"},"module":"events","timestamp":"2025-10-22T02:09:06.734Z"}
 {"level":"silly","message":"Response Promise Event npwd:fetchMessageGroups:6c3ca1b4-4258-40a6-83dd-f1ecade15be8 (11.0687ms), Data >>","module":"events","timestamp":"2025-10-22T02:09:06.734Z"}
 {"level":"silly","message":{"data":[],"status":"ok"},"module":"events","timestamp":"2025-10-22T02:09:06.734Z"}
+{"level":"info","message":"Executed query (SELECT id FROM npwd_marketplace_listings WHERE identifier = ? [\"AMVY495F\"]) in 63.2374ms'","module":"DBInterface","timestamp":"2025-10-22T02:25:56.937Z"}
+{"level":"info","message":"Executed query (DELETE FROM npwd_marketplace_listings WHERE identifier = ? AND reported = 0 [\"AMVY495F\"]) in 1.0647ms'","module":"DBInterface","timestamp":"2025-10-22T02:25:56.939Z"}
+{"level":"info","message":"Unloaded NPWD Player, source: (1)","module":"player","timestamp":"2025-10-22T02:25:56.939Z"}
