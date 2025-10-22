@@ -1,18 +1,18 @@
 local componentImages = {
-    [1] = 'mask.png',
-    [3] = 'gloves.png',
-    [4] = 'jeans.png',
-    [5] = 'bag.png',
-    [6] = 'shoes.png',
-    [7] = 'chain.png',
-    [8] = 'tshirt.png',
-    [11] = 'torso.png',
+    [1] = 'mask',
+    [3] = 'gloves',
+    [4] = 'jeans',
+    [5] = 'bag',
+    [6] = 'shoes',
+    [7] = 'chain',
+    [8] = 'tshirt',
+    [11] = 'torso',
 }
 
 local propImages = {
-    [0] = 'helmet.png',
-    [1] = 'glasses.png',
-    [6] = 'watches.png',
+    [0] = 'helmet',
+    [1] = 'glasses',
+    [6] = 'watches',
 }
 
 local function buildMetadataFromPurchase(item)
