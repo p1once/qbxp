@@ -163,18 +163,42 @@ function L2_1(A0_2, A1_2, A2_2, A3_2)
   else
     L5_2 = L4_2.componentId
     if 3 == L5_2 then
-      L5_2 = IsBaseArms
-      L6_2 = A1_2.name_hash
-      L5_2 = L5_2(L6_2)
+      L5_2 = A1_2.gloves
       if L5_2 then
-        L5_2 = A1_2.gloves
-        if not L5_2 and not A2_2 then
-          L5_2 = ApplyArms
-          L6_2 = A1_2.name_hash
-          L7_2 = L4_2
-          L5_2(L6_2, L7_2)
+        if A3_2 then
+          L5_2 = L0_1
+          L6_2 = A0_2
+          L7_2 = L4_2.componentId
+          L8_2 = L4_2.drawableId
+          L9_2 = L4_2.textureId
+          L5_2(L6_2, L7_2, L8_2, L9_2)
+        end
+        L5_2 = RcoreSetPedComponentVariation
+        L6_2 = A0_2
+        L7_2 = L4_2.componentId
+        L8_2 = L4_2.drawableId
+        L9_2 = L4_2.textureId
+        L10_2 = L4_2.palette
+        L5_2(L6_2, L7_2, L8_2, L9_2, L10_2)
+        if A3_2 then
+          L5_2 = ReleasePedPreloadVariationData
+          L6_2 = A0_2
+          L5_2(L6_2)
+        end
+      else
+        L5_2 = IsBaseArms
+        L6_2 = A1_2.name_hash
+        L5_2 = L5_2(L6_2)
+        if L5_2 then
+          L5_2 = A1_2.gloves
+          if not L5_2 and not A2_2 then
+            L5_2 = ApplyArms
+            L6_2 = A1_2.name_hash
+            L7_2 = L4_2
+            L5_2(L6_2, L7_2)
+          end
+        end
       end
-    end
     else
       if A3_2 then
         L5_2 = L0_1
