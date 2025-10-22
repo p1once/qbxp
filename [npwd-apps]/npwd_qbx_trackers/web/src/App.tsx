@@ -200,6 +200,28 @@ const styles: Record<
   },
 };
 
+const useDelayedVisibility = (active: boolean, delay = 120) => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    let timer: number | undefined;
+
+    if (active) {
+      timer = window.setTimeout(() => setVisible(true), delay);
+    } else {
+      setVisible(false);
+    }
+
+    return () => {
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [active, delay]);
+
+  return visible;
+};
+
 const useTrackers = () => {
   const locale = useMemo(() => getLocale(), []);
   const [query, setQuery] = useState('');
@@ -260,8 +282,25 @@ const useTrackers = () => {
 const installedText = (template: string, relativeLabel: string) =>
   template.includes(PLACEHOLDER_TOKEN) ? template.replace(PLACEHOLDER_TOKEN, relativeLabel) : template;
 
+const useDelayedEmptyState = (loading: boolean, hasEntries: boolean, delay = 220) => {
+  const [showEmpty, setShowEmpty] = useState(false);
+
+  useEffect(() => {
+    if (loading || hasEntries) {
+      setShowEmpty(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setShowEmpty(true), delay);
+    return () => window.clearTimeout(timer);
+  }, [delay, hasEntries, loading]);
+
+  return showEmpty;
+};
+
 const TrackersApp = () => {
   const { locale, query, setQuery, entries, refresh, loading, error } = useTrackers();
+  const showLoading = useDelayedVisibility(loading);
 
   const onPing = useCallback(async (plate: string) => {
     if (!plate) return;
@@ -305,14 +344,14 @@ const TrackersApp = () => {
           {error}
         </div>
       )}
-      {loading && (
+      {showLoading && (
         <div style={styles.status} className="status">
           {locale.loading}
         </div>
       )}
 
       <div style={styles.body} className="content">
-        {!entries.length && !loading && (
+        {showEmpty && (
           <div style={styles.empty} className="empty">
             {locale.empty}
           </div>
