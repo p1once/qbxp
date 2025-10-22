@@ -156,7 +156,7 @@ RegisterNetEvent('ox_inventory:updateInventory', function(changes)
     local pendingClothingKeys = {}
 
     for _, item in pairs(changes) do
-        if type(item) == 'table' and item.name == 'clothing' and item.count and type(item.metadata) == 'table' then
+        if type(item) == 'table' and item.name == 'clothing' and type(item.metadata) == 'table' and (item.count == nil or item.count > 0) then
             local key = buildMetadataKey(item.metadata)
 
             if key then
@@ -177,7 +177,7 @@ RegisterNetEvent('ox_inventory:updateInventory', function(changes)
                 end
             end
         elseif type(item) == 'table' then
-            if item.name == 'clothing' and item.count and type(item.metadata) == 'table' then
+            if item.name == 'clothing' and type(item.metadata) == 'table' and (item.count == nil or item.count > 0) then
                 local previousEntry = normaliseTrackedEntry(slot)
                 local previousMetadata = previousEntry and previousEntry.metadata
                 local previousKey = previousEntry and previousEntry.key
