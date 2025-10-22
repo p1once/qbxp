@@ -22,6 +22,10 @@ type NuiListResponse = {
   data?: Tracker[];
 };
 
+let cachedEntries: Tracker[] | null = null;
+let cachedEmptyResult: boolean | null = null;
+let hasLoadedOnce = false;
+
 const mockTrackers: Tracker[] = [
   { plate: 'DEV123', installedAt: Math.floor(Date.now() / 1000) - 140, net: true },
   { plate: 'NPWD42', installedAt: Math.floor(Date.now() / 1000) - 3600, net: false },
@@ -226,14 +230,16 @@ const useDelayedVisibility = (active: boolean, delay = 120) => {
 const useTrackers = () => {
   const locale = useMemo(() => getLocale(), []);
   const [query, setQuery] = useState('');
-  const [entries, setEntries] = useState<Tracker[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [entries, setEntries] = useState<Tracker[]>(() => cachedEntries ?? []);
+  const [loading, setLoading] = useState(() => !hasLoadedOnce);
   const [error, setError] = useState<string | null>(null);
-  const [loadedOnce, setLoadedOnce] = useState(false);
+  const [loadedOnce, setLoadedOnce] = useState(hasLoadedOnce);
+  const [emptyResult, setEmptyResult] = useState<boolean | null>(cachedEmptyResult);
   const skipNextVisibility = useRef(true);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setEmptyResult(null);
     setError(null);
     try {
       const payload = await fetchNui<NuiListResponse>(
@@ -243,12 +249,17 @@ const useTrackers = () => {
       );
       const list = Array.isArray(payload) ? payload : payload?.data ?? [];
       setEntries(list);
+      cachedEntries = list;
+      setEmptyResult(list.length === 0);
+      cachedEmptyResult = list.length === 0;
     } catch (err) {
       console.error('Failed to fetch tracker list', err);
       setError(locale.errorLoading);
+      setEmptyResult(false);
     } finally {
       setLoading(false);
       setLoadedOnce(true);
+      hasLoadedOnce = true;
     }
   }, [locale.errorLoading]);
 
@@ -289,6 +300,7 @@ const useTrackers = () => {
     loading,
     error,
     loadedOnce,
+    emptyResult,
   };
 };
 
@@ -318,9 +330,10 @@ const useDelayedEmptyState = (loading: boolean, hasEntries: boolean, delay = 220
 };
 
 const TrackersApp = () => {
-  const { locale, query, setQuery, entries, refresh, loading, error, loadedOnce } = useTrackers();
+  const { locale, query, setQuery, entries, refresh, loading, error, loadedOnce, emptyResult } = useTrackers();
   const showLoading = useDelayedVisibility(loading);
-  const showEmpty = useDelayedEmptyState(loading || !loadedOnce, entries.length > 0);
+  const emptyReady = useDelayedEmptyState(loading || !loadedOnce || emptyResult === null, entries.length > 0);
+  const showEmpty = emptyResult === true && emptyReady;
 
   const onPing = useCallback(async (plate: string) => {
     if (!plate) return;
