@@ -27,6 +27,10 @@ local function buildMetadataFromPurchase(item)
     local texture = item.texture_id
 
     componentId = type(componentId) == 'number' and math.tointeger(componentId)
+
+    if componentId == 33 then
+        componentId = 3
+    end
     drawable = type(drawable) == 'number' and math.tointeger(drawable)
     texture = type(texture) == 'number' and math.tointeger(texture)
 
