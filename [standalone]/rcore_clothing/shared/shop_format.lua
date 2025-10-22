@@ -524,6 +524,61 @@ function GetEmptyBag(pedModel)
     end
 end
 
+local function resolveCategoryImage(componentId, category)
+    if not componentId then
+        return nil
+    end
+
+    local normalizedComponentId = tonumber(componentId) or componentId
+    local normalizedCategory = nil
+
+    if category ~= nil then
+        if type(category) == 'string' then
+            normalizedCategory = category:gsub('^%s+', ''):gsub('%s+$', '')
+        elseif category ~= '' then
+            normalizedCategory = tostring(category)
+        end
+    end
+
+    if normalizedCategory and normalizedCategory ~= '' then
+        normalizedCategory = normalizedCategory:lower()
+
+        local componentCategories = clothingCategoryDefinition[normalizedComponentId]
+
+        if componentCategories then
+            for _, definition in ipairs(componentCategories) do
+                if definition.name == normalizedCategory and definition.image then
+                    return definition.image
+                end
+            end
+        end
+    end
+
+    local componentData = componentLevel[normalizedComponentId]
+
+    if componentData and componentData.image then
+        return componentData.image
+    end
+
+    return nil
+end
+
+local function resolveItemImage(item)
+    local image = item.image_url
+
+    if type(image) == 'string' then
+        local trimmedImage = image:gsub('^%s+', ''):gsub('%s+$', '')
+
+        if trimmedImage ~= '' and trimmedImage:lower() ~= 'none' then
+            return trimmedImage
+        end
+    elseif image then
+        return image
+    end
+
+    return resolveCategoryImage(item.component_id, item.type)
+end
+
 function FormatClothingItem(showEverything, item, shopName)
     
     local inShop = false
@@ -541,7 +596,7 @@ function FormatClothingItem(showEverything, item, shopName)
         price = item.custom_price or CalculateItemPrice(item.id, shopName, item.component_id, item.drawable_id, item.type, item.price),
         drawable_id = item.drawable_id,
         texture_id = item.texture_id,
-        image = item.image_url,
+        image = resolveItemImage(item),
         colors = item.colors,
         category = item.type,
         name_hash = item.name_hash,
