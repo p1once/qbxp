@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { getLocale } from './locales';
@@ -228,6 +229,7 @@ const useTrackers = () => {
   const [entries, setEntries] = useState<Tracker[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const skipNextVisibility = useRef(true);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -254,8 +256,16 @@ const useTrackers = () => {
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      if (event.data?.action === 'npwd:visibility' && event.data.visibility) {
+      if (event.data?.action !== 'npwd:visibility') return;
+
+      if (event.data.visibility) {
+        if (skipNextVisibility.current) {
+          skipNextVisibility.current = false;
+          return;
+        }
         load();
+      } else {
+        skipNextVisibility.current = false;
       }
     };
     window.addEventListener('message', handler);
@@ -286,13 +296,19 @@ const useDelayedEmptyState = (loading: boolean, hasEntries: boolean, delay = 220
   const [showEmpty, setShowEmpty] = useState(false);
 
   useEffect(() => {
-    if (loading || hasEntries) {
+    let timer: number | undefined;
+
+    if (!loading && !hasEntries) {
+      timer = window.setTimeout(() => setShowEmpty(true), delay);
+    } else {
       setShowEmpty(false);
-      return;
     }
 
-    const timer = window.setTimeout(() => setShowEmpty(true), delay);
-    return () => window.clearTimeout(timer);
+    return () => {
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+    };
   }, [delay, hasEntries, loading]);
 
   return showEmpty;
