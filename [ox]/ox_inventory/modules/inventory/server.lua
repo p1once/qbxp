@@ -1622,10 +1622,9 @@ local function dropItem(source, playerInventory, fromData, data)
 
 	TriggerClientEvent('ox_inventory:createDrop', -1, dropId, Inventory.Drops[dropId], playerInventory.open and source, slot)
 
-        if clothingMetadata then
-                clothingMetadata.forceClear = true
-                TriggerClientEvent('ox_inventory:clothingUnequipped', source, clothingMetadata)
-        end
+	if clothingMetadata then
+		TriggerClientEvent('ox_inventory:clothingUnequipped', source, clothingMetadata)
+	end
 
 	if server.loglevel > 0 then
 		lib.logger(playerInventory.owner, 'swapSlots', ('%sx %s transferred from "%s" to "%s"'):format(data.count, toData.name, playerInventory.label, dropId))
@@ -1925,10 +1924,9 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 			fromInventory.items[data.fromSlot] = fromData
 			toInventory.items[data.toSlot] = toData
 
-                        if clothingMetadata then
-                                clothingMetadata.forceClear = true
-                                TriggerClientEvent('ox_inventory:clothingUnequipped', source, clothingMetadata)
-                        end
+			if clothingMetadata then
+				TriggerClientEvent('ox_inventory:clothingUnequipped', source, clothingMetadata)
+			end
 
 			if fromInventory.changed ~= nil then fromInventory.changed = true end
 			if toInventory.changed ~= nil then toInventory.changed = true end

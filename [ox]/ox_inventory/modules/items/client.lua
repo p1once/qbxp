@@ -268,9 +268,18 @@ local function removeClothing(metadata)
                 end
 
                 local previous = popClothingState(clothingState.props, propId)
+                local stack = clothingState.props[propId]
 
-                if previous and not metadata.forceClear then
-                        if previous.drawable == -1 then
+                if metadata.forceClear then
+                        local fallback = stack and stack[#stack]
+
+                        if not fallback then
+                                fallback = getPropFallback(metadata, propId)
+                        end
+
+                        if fallback then
+                                applyPropState(propId, fallback)
+                        else
                                 ClearPedProp(cache.ped, propId)
                         else
                                 SetPedPropIndex(cache.ped, propId, previous.drawable, previous.texture or 0, false)
@@ -293,11 +302,39 @@ local function removeClothing(metadata)
                 end
 
                 local previous = popClothingState(clothingState.components, componentId)
+                local stack = clothingState.components[componentId]
 
+                if metadata.forceClear then
+                        local fallback = stack and stack[#stack]
+
+                        if not fallback then
+                                fallback = getComponentFallback(metadata, componentId)
+                        end
+
+<<<<<<< ours
                 if previous and not metadata.forceClear then
                         SetPedComponentVariation(cache.ped, componentId, previous.drawable or 0, previous.texture or 0, previous.palette or 0)
                 else
                         SetPedComponentVariation(cache.ped, componentId, metadata.defaultDrawable or 0, metadata.defaultTexture or 0, metadata.defaultPalette or 0)
+=======
+                        if fallback then
+                                applyComponentState(componentId, fallback)
+                        else
+                                SetPedComponentVariation(cache.ped, componentId, 0, 0, 0)
+                        end
+                else
+                        if previous then
+                                applyComponentState(componentId, previous)
+                        else
+                                local fallback = getComponentFallback(metadata, componentId)
+
+                                if fallback then
+                                        applyComponentState(componentId, fallback)
+                                else
+                                        SetPedComponentVariation(cache.ped, componentId, 0, 0, 0)
+                                end
+                        end
+>>>>>>> theirs
                 end
 
                 return true
