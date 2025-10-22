@@ -8031,3 +8031,6 @@
 {"level":"silly","message":{"data":{"bio":"","createdAt":"2025-10-22T14:44:55.000Z","id":32,"identifier":"ZBD282VI","image":"https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg","job":"","lastActive":1761144295,"lastActiveFormatted":"Wed, 22 Oct 2025 14:44:55 GMT","location":"","name":"Lilian Juri","tagList":[],"tags":"","updatedAt":"2025-10-22T14:44:55.000Z","viewed":false,"voiceMessage":null},"status":"ok"},"module":"events","timestamp":"2025-10-22T16:50:24.514Z"}
 {"level":"silly","message":"Response Promise Event npwd-contact-getAll:42d3797b-1dcc-4c2f-879b-471d1fc421cb (7.1229ms), Data >>","module":"events","timestamp":"2025-10-22T16:50:24.514Z"}
 {"level":"silly","message":{"data":[],"status":"ok"},"module":"events","timestamp":"2025-10-22T16:50:24.514Z"}
+{"level":"info","message":"Executed query (SELECT id FROM npwd_marketplace_listings WHERE identifier = ? [\"ZBD282VI\"]) in 54.7968ms'","module":"DBInterface","timestamp":"2025-10-22T16:58:28.808Z"}
+{"level":"info","message":"Executed query (DELETE FROM npwd_marketplace_listings WHERE identifier = ? AND reported = 0 [\"ZBD282VI\"]) in 1.2371ms'","module":"DBInterface","timestamp":"2025-10-22T16:58:28.809Z"}
+{"level":"info","message":"Unloaded NPWD Player, source: (1)","module":"player","timestamp":"2025-10-22T16:58:28.810Z"}
