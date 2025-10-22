@@ -53,6 +53,10 @@ local function buildMetadataFromPurchase(item)
     end
 
     if image then
+        if not image:find('%.png$') then
+            image = ('%s.png'):format(image)
+        end
+
         metadata.image = ('outfits/%s'):format(image)
     end
 
