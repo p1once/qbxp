@@ -1,3 +1,5 @@
+local trackedClothingSlots = {}
+
 local function sanitizePurchasedItems(items)
     if type(items) ~= 'table' then
         return nil
@@ -41,4 +43,33 @@ RegisterNetEvent('rcore_clothing:internal:itemPurchased', function(purchasedItem
     end
 
     TriggerServerEvent('rcore_clothing_inventory:addClothingItems', items)
+end)
+
+RegisterNetEvent('ox_inventory:updateInventory', function(changes)
+    if type(changes) ~= 'table' then
+        return
+    end
+
+    for slot, item in pairs(changes) do
+        if item == false then
+            local metadata = trackedClothingSlots[slot]
+
+            if metadata then
+                trackedClothingSlots[slot] = nil
+                TriggerEvent('ox_inventory:clothingUnequipped', metadata)
+            end
+        elseif type(item) == 'table' then
+            if item.name == 'clothing' and item.count and type(item.metadata) == 'table' then
+                trackedClothingSlots[slot] = item.metadata
+            elseif trackedClothingSlots[slot] then
+                local metadata = trackedClothingSlots[slot]
+                trackedClothingSlots[slot] = nil
+                TriggerEvent('ox_inventory:clothingUnequipped', metadata)
+            end
+        elseif trackedClothingSlots[slot] then
+            local metadata = trackedClothingSlots[slot]
+            trackedClothingSlots[slot] = nil
+            TriggerEvent('ox_inventory:clothingUnequipped', metadata)
+        end
+    end
 end)

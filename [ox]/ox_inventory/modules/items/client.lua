@@ -269,7 +269,7 @@ local function removeClothing(metadata)
 
                 local previous = popClothingState(clothingState.props, propId)
 
-                if previous then
+                if previous and not metadata.forceClear then
                         if previous.drawable == -1 then
                                 ClearPedProp(cache.ped, propId)
                         else
@@ -294,10 +294,10 @@ local function removeClothing(metadata)
 
                 local previous = popClothingState(clothingState.components, componentId)
 
-                if previous then
+                if previous and not metadata.forceClear then
                         SetPedComponentVariation(cache.ped, componentId, previous.drawable or 0, previous.texture or 0, previous.palette or 0)
                 else
-                        SetPedComponentVariation(cache.ped, componentId, 0, 0, 0)
+                        SetPedComponentVariation(cache.ped, componentId, metadata.defaultDrawable or 0, metadata.defaultTexture or 0, metadata.defaultPalette or 0)
                 end
 
                 return true
