@@ -12,6 +12,10 @@ AddEventHandler('qbx_core:server:onGroupUpdate', function(source, groupName, gro
 end)
 
 local function setupPlayer(playerData)
+    if not playerData then
+        return
+    end
+
     playerData.identifier = playerData.citizenid
     playerData.name = ('%s %s'):format(playerData.charinfo.firstname, playerData.charinfo.lastname)
     server.setPlayerInventory(playerData)
@@ -26,9 +30,31 @@ end
 
 AddStateBagChangeHandler('loadInventory', nil, function(bagName, _, value)
     if not value then return end
+
     local plySrc = GetPlayerFromStateBagName(bagName)
     if not plySrc then return end
-    setupPlayer(QBX:GetPlayer(plySrc).PlayerData)
+
+    local player = QBX:GetPlayer(plySrc)
+
+    if player then
+        return setupPlayer(player.PlayerData)
+    end
+
+    CreateThread(function()
+        local attempts = 0
+
+        repeat
+            Wait(50)
+            attempts += 1
+            player = QBX:GetPlayer(plySrc)
+        until player or attempts >= 20
+
+        if player then
+            setupPlayer(player.PlayerData)
+        else
+            lib.print.warn(('Failed to setup inventory for player %s; player data unavailable'):format(plySrc))
+        end
+    end)
 end)
 
 SetTimeout(500, function()
