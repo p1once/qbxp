@@ -1,3 +1,20 @@
+local componentImages = {
+    [1] = 'mask.png',
+    [3] = 'gloves.png',
+    [4] = 'jeans.png',
+    [5] = 'bag.png',
+    [6] = 'shoes.png',
+    [7] = 'chain.png',
+    [8] = 'tshirt.png',
+    [11] = 'torso.png',
+}
+
+local propImages = {
+    [0] = 'helmet.png',
+    [1] = 'glasses.png',
+    [6] = 'watches.png',
+}
+
 local function buildMetadataFromPurchase(item)
     if type(item) ~= 'table' then
         return nil
@@ -24,10 +41,19 @@ local function buildMetadataFromPurchase(item)
         texture = texture
     }
 
+    local image
+
     if componentId >= 100 then
-        metadata.prop = componentId - 100
+        local propId = componentId - 100
+        metadata.prop = propId
+        image = propImages[propId]
     else
         metadata.component = componentId
+        image = componentImages[componentId]
+    end
+
+    if image then
+        metadata.image = ('outfits/%s'):format(image)
     end
 
     if type(item.label) == 'string' and item.label ~= '' then
