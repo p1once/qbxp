@@ -6904,3 +6904,6 @@
 {"level":"silly","message":{"data":{"bio":"","createdAt":"2025-10-22T07:39:59.000Z","id":29,"identifier":"HDL2OT88","image":"https://upload.wikimedia.org/wikipedia/commons/a/ac/No_image_available.svg","job":"","lastActive":1761118799,"lastActiveFormatted":"Wed, 22 Oct 2025 07:39:59 GMT","location":"","name":"Zeze Fyra","tagList":[],"tags":"","updatedAt":"2025-10-22T07:39:59.000Z","viewed":false,"voiceMessage":null},"status":"ok"},"module":"events","timestamp":"2025-10-22T09:03:13.931Z"}
 {"level":"silly","message":"Response Promise Event npwd-contact-getAll:012a0098-449c-44f1-8e64-f7830d8a4107 (9.5883ms), Data >>","module":"events","timestamp":"2025-10-22T09:03:13.932Z"}
 {"level":"silly","message":{"data":[],"status":"ok"},"module":"events","timestamp":"2025-10-22T09:03:13.932Z"}
+{"level":"info","message":"Executed query (SELECT id FROM npwd_marketplace_listings WHERE identifier = ? [\"HDL2OT88\"]) in 63.8813ms'","module":"DBInterface","timestamp":"2025-10-22T10:01:34.479Z"}
+{"level":"info","message":"Executed query (DELETE FROM npwd_marketplace_listings WHERE identifier = ? AND reported = 0 [\"HDL2OT88\"]) in 1.5167ms'","module":"DBInterface","timestamp":"2025-10-22T10:01:34.480Z"}
+{"level":"info","message":"Unloaded NPWD Player, source: (1)","module":"player","timestamp":"2025-10-22T10:01:34.481Z"}
