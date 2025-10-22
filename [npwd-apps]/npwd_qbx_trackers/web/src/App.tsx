@@ -229,6 +229,7 @@ const useTrackers = () => {
   const [entries, setEntries] = useState<Tracker[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadedOnce, setLoadedOnce] = useState(false);
   const skipNextVisibility = useRef(true);
 
   const load = useCallback(async () => {
@@ -247,6 +248,7 @@ const useTrackers = () => {
       setError(locale.errorLoading);
     } finally {
       setLoading(false);
+      setLoadedOnce(true);
     }
   }, [locale.errorLoading]);
 
@@ -286,6 +288,7 @@ const useTrackers = () => {
     refresh: load,
     loading,
     error,
+    loadedOnce,
   };
 };
 
@@ -315,8 +318,9 @@ const useDelayedEmptyState = (loading: boolean, hasEntries: boolean, delay = 220
 };
 
 const TrackersApp = () => {
-  const { locale, query, setQuery, entries, refresh, loading, error } = useTrackers();
+  const { locale, query, setQuery, entries, refresh, loading, error, loadedOnce } = useTrackers();
   const showLoading = useDelayedVisibility(loading);
+  const showEmpty = useDelayedEmptyState(loading || !loadedOnce, entries.length > 0);
 
   const onPing = useCallback(async (plate: string) => {
     if (!plate) return;
