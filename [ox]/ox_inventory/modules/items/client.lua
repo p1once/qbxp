@@ -120,10 +120,10 @@ Item('parachute', function(data, slot)
 				GiveWeaponToPed(cache.ped, chute, 0, true, false)
 				SetPedGadget(cache.ped, chute, true)
 				lib.requestModel(1269906701)
-                                client.parachute = {CreateParachuteBagObject(cache.ped, true, true), slot?.metadata?.type or -1}
-                                if slot.metadata?.type then
-                                        SetPlayerParachuteTintIndex(PlayerData.id, slot.metadata?.type)
-                                end
+				client.parachute = {CreateParachuteBagObject(cache.ped, true, true), slot?.metadata?.type or -1}
+				if slot.metadata.type then
+					SetPlayerParachuteTintIndex(PlayerData.id, slot.metadata.type)
+				end
 			end
 		end)
 	end
@@ -139,251 +139,51 @@ Item('phone', function(data, slot)
 	end
 end)
 
-local clothingState = {
-        components = {},
-        props = {}
-}
-
----@param container table<number, table[]>
----@param id number
----@return table | nil
-local function popClothingState(container, id)
-        local stack = container[id]
-
-        if not stack then return end
-
-        local state = stack[#stack]
-        stack[#stack] = nil
-
-        if #stack == 0 then
-                container[id] = nil
-        end
-
-        return state
-end
-
----@param container table<number, table[]>
----@param id number
----@param state table
-local function pushClothingState(container, id, state)
-        local stack = container[id]
-
-        if stack then
-                stack[#stack + 1] = state
-        else
-                container[id] = { state }
-        end
-end
-
----@param metadata table
----@param skipValidation? boolean
----@return boolean?
-local function tryEquipClothing(metadata, skipValidation)
-        if type(metadata) ~= 'table' then return end
-
-        local drawable = metadata.drawable
-        local texture = metadata.texture
-
-        if type(drawable) ~= 'number' or type(texture) ~= 'number' then return end
-
-        if metadata.prop ~= nil then
-                local propId = metadata.prop
-
-                if type(propId) ~= 'number' then return end
-
-                if not skipValidation and not SetPedPreloadPropData(cache.ped, propId, drawable, texture) then
-                        print('Clothing has invalid prop for this ped')
-                        return
-                end
-
-                local currentDrawable = GetPedPropIndex(cache.ped, propId)
-                local currentTexture = GetPedPropTextureIndex(cache.ped, propId)
-
-                if currentDrawable == drawable and currentTexture == texture then
-                        return false
-                end
-
-                pushClothingState(clothingState.props, propId, {
-                        drawable = currentDrawable,
-                        texture = currentTexture
-                })
-
-                if drawable == -1 then
-                        ClearPedProp(cache.ped, propId)
-                else
-                        SetPedPropIndex(cache.ped, propId, drawable, texture, false)
-                end
-
-                return true
-        elseif metadata.component ~= nil then
-                local componentId = metadata.component
-
-                if type(componentId) ~= 'number' then return end
-
-                if not skipValidation and not IsPedComponentVariationValid(cache.ped, componentId, drawable, texture) then
-                        print('Clothing has invalid component for this ped')
-                        return
-                end
-
-                local currentDrawable = GetPedDrawableVariation(cache.ped, componentId)
-                local currentTexture = GetPedTextureVariation(cache.ped, componentId)
-
-                if currentDrawable == drawable and currentTexture == texture then
-                        return false
-                end
-
-                pushClothingState(clothingState.components, componentId, {
-                        drawable = currentDrawable,
-                        texture = currentTexture,
-                        palette = GetPedPaletteVariation(cache.ped, componentId)
-                })
-
-                SetPedComponentVariation(cache.ped, componentId, drawable, texture, metadata.palette or 0)
-
-                return true
-        else
-                print('Clothing is missing prop/component id in metadata')
-        end
-end
-
----@param metadata table
-local function removeClothing(metadata)
-        if type(metadata) ~= 'table' then return end
-
-        local drawable = metadata.drawable
-        local texture = metadata.texture
-
-        if type(drawable) ~= 'number' or type(texture) ~= 'number' then return end
-
-        if metadata.prop ~= nil then
-                local propId = metadata.prop
-
-                if type(propId) ~= 'number' then return end
-
-                local currentDrawable = GetPedPropIndex(cache.ped, propId)
-                local currentTexture = GetPedPropTextureIndex(cache.ped, propId)
-
-                if currentDrawable ~= drawable or currentTexture ~= texture then
-                        return false
-                end
-
-                local previous = popClothingState(clothingState.props, propId)
-                local stack = clothingState.props[propId]
-
-                if metadata.forceClear then
-                        local fallback = stack and stack[#stack]
-
-                        if not fallback then
-                                fallback = getPropFallback(metadata, propId)
-                        end
-
-                        if fallback then
-                                applyPropState(propId, fallback)
-                        else
-                                ClearPedProp(cache.ped, propId)
-                        else
-                                SetPedPropIndex(cache.ped, propId, previous.drawable, previous.texture or 0, false)
-                        end
-                else
-                        ClearPedProp(cache.ped, propId)
-                end
-
-                return true
-        elseif metadata.component ~= nil then
-                local componentId = metadata.component
-
-                if type(componentId) ~= 'number' then return end
-
-                local currentDrawable = GetPedDrawableVariation(cache.ped, componentId)
-                local currentTexture = GetPedTextureVariation(cache.ped, componentId)
-
-                if currentDrawable ~= drawable or currentTexture ~= texture then
-                        return false
-                end
-
-                local previous = popClothingState(clothingState.components, componentId)
-                local stack = clothingState.components[componentId]
-
-                if metadata.forceClear then
-                        local fallback = stack and stack[#stack]
-
-                        if not fallback then
-                                fallback = getComponentFallback(metadata, componentId)
-                        end
-
-<<<<<<< ours
-                if previous and not metadata.forceClear then
-                        SetPedComponentVariation(cache.ped, componentId, previous.drawable or 0, previous.texture or 0, previous.palette or 0)
-                else
-                        SetPedComponentVariation(cache.ped, componentId, metadata.defaultDrawable or 0, metadata.defaultTexture or 0, metadata.defaultPalette or 0)
-=======
-                        if fallback then
-                                applyComponentState(componentId, fallback)
-                        else
-                                SetPedComponentVariation(cache.ped, componentId, 0, 0, 0)
-                        end
-                else
-                        if previous then
-                                applyComponentState(componentId, previous)
-                        else
-                                local fallback = getComponentFallback(metadata, componentId)
-
-                                if fallback then
-                                        applyComponentState(componentId, fallback)
-                                else
-                                        SetPedComponentVariation(cache.ped, componentId, 0, 0, 0)
-                                end
-                        end
->>>>>>> theirs
-                end
-
-                return true
-        end
-end
-
 Item('clothing', function(data, slot)
-        local metadata = slot.metadata
+	local metadata = slot.metadata
 
-        if not metadata or not metadata.drawable then return print('Clothing is missing drawable in metadata') end
-        if not metadata.texture then return print('Clothing is missing texture in metadata') end
+	if not metadata.drawable then return print('Clothing is missing drawable in metadata') end
+	if not metadata.texture then return print('Clothing is missing texture in metadata') end
 
-        if metadata.prop then
-                if not SetPedPreloadPropData(cache.ped, metadata.prop, metadata.drawable, metadata.texture) then
-                        return print('Clothing has invalid prop for this ped')
-                end
-        elseif metadata.component then
-                if not IsPedComponentVariationValid(cache.ped, metadata.component, metadata.drawable, metadata.texture) then
-                        return print('Clothing has invalid component for this ped')
-                end
-        else
-                return print('Clothing is missing prop/component id in metadata')
-        end
+	if metadata.prop then
+		if not SetPedPreloadPropData(cache.ped, metadata.prop, metadata.drawable, metadata.texture) then
+			return print('Clothing has invalid prop for this ped')
+		end
+	elseif metadata.component then
+		if not IsPedComponentVariationValid(cache.ped, metadata.component, metadata.drawable, metadata.texture) then
+			return print('Clothing has invalid component for this ped')
+		end
+	else
+		return print('Clothing is missing prop/component id in metadata')
+	end
 
-        ox_inventory:useItem(data, function(data)
-                if data then
-                        metadata = data.metadata
+	ox_inventory:useItem(data, function(data)
+		if data then
+			metadata = data.metadata
 
-                        local result = tryEquipClothing(metadata, true)
+			if metadata.prop then
+				local prop = GetPedPropIndex(cache.ped, metadata.prop)
+				local texture = GetPedPropTextureIndex(cache.ped, metadata.prop)
 
-                        if result == false then
-                                removeClothing(metadata)
-                        end
-                end
-        end)
-end)
+				if metadata.drawable == prop and metadata.texture == texture then
+					return ClearPedProp(cache.ped, metadata.prop)
+				end
 
-RegisterNetEvent('ox_inventory:clothingUnequipped', function(metadata)
-        removeClothing(metadata)
-end)
+				-- { prop = 0, drawable = 2, texture = 1 } = grey beanie
+				SetPedPropIndex(cache.ped, metadata.prop, metadata.drawable, metadata.texture, false);
+			elseif metadata.component then
+				local drawable = GetPedDrawableVariation(cache.ped, metadata.component)
+				local texture = GetPedTextureVariation(cache.ped, metadata.component)
 
-RegisterNetEvent('ox_inventory:updateInventory', function(changes)
-        if type(changes) ~= 'table' then return end
+				if metadata.drawable == drawable and metadata.texture == texture then
+					return -- item matches (setup defaults so we can strip?)
+				end
 
-        for _, item in pairs(changes) do
-                if type(item) == 'table' and item.name == 'clothing' and item.count and type(item.metadata) == 'table' then
-                        tryEquipClothing(item.metadata)
-                end
-        end
+				-- { component = 4, drawable = 4, texture = 1 } = jeans w/ belt
+				SetPedComponentVariation(cache.ped, metadata.component, metadata.drawable, metadata.texture, 0);
+			end
+		end
+	end)
 end)
 
 -----------------------------------------------------------------------------------------------
