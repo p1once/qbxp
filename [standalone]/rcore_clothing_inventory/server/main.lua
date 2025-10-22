@@ -12,6 +12,8 @@ local componentImages = {
 local propImages = {
     [0] = 'helmet',
     [1] = 'glasses',
+    [2] = 'ears',
+    [7] = 'bracelet',
     [6] = 'watches',
 }
 

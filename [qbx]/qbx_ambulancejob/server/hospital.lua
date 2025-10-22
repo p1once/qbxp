@@ -5,6 +5,7 @@
 local config = require 'config.server'
 local sharedConfig = require 'config.shared'
 local triggerEventHooks = require '@qbx_core.modules.hooks'
+local oxInventory = exports.ox_inventory
 local doctorCalled = false
 
 ---@type table<string, table<number, boolean>>
@@ -61,8 +62,35 @@ end)
 
 ---@param src number
 local function wipeInventory(src)
-	exports.ox_inventory:ClearInventory(src)
-	exports.qbx_core:Notify(src, locale('error.possessions_taken'), 'error')
+        local clothingItems = {}
+        local clothingItemCount = 0
+        local inventory = oxInventory:GetInventoryItems(src)
+
+        for slot, item in pairs(inventory) do
+                if item.name == 'clothing' then
+                        clothingItemCount += 1
+                        clothingItems[clothingItemCount] = {
+                                slot = slot,
+                                count = item.count,
+                                metadata = item.metadata,
+                        }
+                end
+        end
+
+        oxInventory:ClearInventory(src)
+
+        if clothingItemCount > 0 then
+                table.sort(clothingItems, function(a, b)
+                        return a.slot < b.slot
+                end)
+
+                for i = 1, clothingItemCount do
+                        local clothingItem = clothingItems[i]
+                        oxInventory:AddItem(src, 'clothing', clothingItem.count, clothingItem.metadata, clothingItem.slot)
+                end
+        end
+
+        exports.qbx_core:Notify(src, locale('error.possessions_taken'), 'error')
 end
 
 lib.callback.register('qbx_ambulancejob:server:spawnVehicle', function(source, vehicleName, vehicleCoords)
