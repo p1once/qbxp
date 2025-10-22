@@ -56,20 +56,27 @@ RegisterNetEvent('ox_inventory:updateInventory', function(changes)
 
             if metadata then
                 trackedClothingSlots[slot] = nil
-                TriggerEvent('ox_inventory:clothingUnequipped', metadata)
+                TriggerEvent('ox_inventory:clothingUnequipped', metadata, slot)
             end
         elseif type(item) == 'table' then
             if item.name == 'clothing' and item.count and type(item.metadata) == 'table' then
+                local previousMetadata = trackedClothingSlots[slot]
+
+                if previousMetadata and previousMetadata ~= item.metadata then
+                    TriggerEvent('ox_inventory:clothingUnequipped', previousMetadata, slot)
+                end
+
                 trackedClothingSlots[slot] = item.metadata
+                TriggerEvent('ox_inventory:clothingEquipped', item.metadata, slot)
             elseif trackedClothingSlots[slot] then
                 local metadata = trackedClothingSlots[slot]
                 trackedClothingSlots[slot] = nil
-                TriggerEvent('ox_inventory:clothingUnequipped', metadata)
+                TriggerEvent('ox_inventory:clothingUnequipped', metadata, slot)
             end
         elseif trackedClothingSlots[slot] then
             local metadata = trackedClothingSlots[slot]
             trackedClothingSlots[slot] = nil
-            TriggerEvent('ox_inventory:clothingUnequipped', metadata)
+            TriggerEvent('ox_inventory:clothingUnequipped', metadata, slot)
         end
     end
 end)

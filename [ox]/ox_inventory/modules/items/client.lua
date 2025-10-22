@@ -2,6 +2,153 @@ if not lib then return end
 
 local Items = require 'modules.items.shared' --[[@as table<string, OxClientItem>]]
 
+local maleModel <const> = `mp_m_freemode_01`
+local femaleModel <const> = `mp_f_freemode_01`
+
+local defaultComponents <const> = {
+    [maleModel] = {
+        [1] = { drawable = 0, texture = 0 },
+        [3] = { drawable = 15, texture = 0 },
+        [4] = { drawable = 61, texture = 2 },
+        [5] = { drawable = 0, texture = 0 },
+        [6] = { drawable = 34, texture = 0 },
+        [7] = { drawable = 0, texture = 0 },
+        [8] = { drawable = 15, texture = 0 },
+        [9] = { drawable = 0, texture = 0 },
+        [10] = { drawable = 0, texture = 0 },
+        [11] = { drawable = 15, texture = 0 },
+    },
+    [femaleModel] = {
+        [1] = { drawable = 0, texture = 0 },
+        [3] = { drawable = 15, texture = 0 },
+        [4] = { drawable = 17, texture = 0 },
+        [5] = { drawable = 0, texture = 0 },
+        [6] = { drawable = 35, texture = 0 },
+        [7] = { drawable = 0, texture = 0 },
+        [8] = { drawable = 15, texture = 0 },
+        [9] = { drawable = 0, texture = 0 },
+        [10] = { drawable = 0, texture = 0 },
+        [11] = { drawable = 15, texture = 0 },
+    }
+}
+
+local function getDefaultComponent(pedModel, component)
+    local defaults = defaultComponents[pedModel]
+
+    if defaults then
+        return defaults[component]
+    end
+
+    return nil
+end
+
+local function setComponentVariation(ped, component, drawable, texture)
+    SetPedComponentVariation(ped, component, drawable, texture or 0, 0)
+end
+
+local function setComponentToDefault(ped, component)
+    local pedModel = GetEntityModel(ped)
+    local default = getDefaultComponent(pedModel, component) or { drawable = 0, texture = 0 }
+
+    setComponentVariation(ped, component, default.drawable, default.texture)
+end
+
+local function setArmsToDefault(ped)
+    setComponentToDefault(ped, 3)
+end
+
+local function isComponentDefault(ped, component, drawable, texture)
+    local pedModel = GetEntityModel(ped)
+    local default = getDefaultComponent(pedModel, component)
+
+    if default then
+        return drawable == default.drawable and texture == default.texture
+    end
+
+    return drawable == 0 and texture == 0
+end
+
+local function parseArms(metadata)
+    local arms = metadata.arms
+
+    if arms == nil then return end
+
+    if type(arms) == 'table' then
+        local drawable = arms.drawable or arms.item or arms[1]
+        local texture = arms.texture or arms[2] or 0
+
+        if drawable then
+            return drawable, texture
+        end
+    elseif type(arms) == 'number' then
+        return arms, 0
+    elseif type(arms) == 'string' then
+        local drawable = tonumber(arms)
+
+        if drawable then
+            return drawable, 0
+        end
+    end
+end
+
+local function validateClothingMetadata(metadata)
+    if metadata.drawable == nil then
+        return false
+    end
+
+    if metadata.prop ~= nil then
+        if not SetPedPreloadPropData(cache.ped, metadata.prop, metadata.drawable, metadata.texture or 0) then
+            return false
+        end
+    elseif metadata.component ~= nil then
+        if not IsPedComponentVariationValid(cache.ped, metadata.component, metadata.drawable, metadata.texture or 0) then
+            return false
+        end
+    else
+        return false
+    end
+
+    return true
+end
+
+local function applyClothing(metadata, skipValidation)
+    if type(metadata) ~= 'table' then return false end
+
+    if not skipValidation and not validateClothingMetadata(metadata) then
+        return false
+    end
+
+    if metadata.prop ~= nil then
+        local prop = metadata.prop
+        local drawable = metadata.drawable or -1
+        local texture = metadata.texture or 0
+
+        if drawable < 0 then
+            ClearPedProp(cache.ped, prop)
+        else
+            SetPedPropIndex(cache.ped, prop, drawable, texture, false)
+        end
+
+        return true
+    end
+
+    local component = metadata.component
+
+    if component == nil then return false end
+
+    setComponentVariation(cache.ped, component, metadata.drawable or 0, metadata.texture or 0)
+
+    if component == 11 or component == 8 then
+        local armsDrawable, armsTexture = parseArms(metadata)
+
+        if armsDrawable then
+            setComponentVariation(cache.ped, 3, armsDrawable, armsTexture)
+        end
+    end
+
+    return true
+end
+
 local function sendDisplayMetadata(data)
     SendNUIMessage({
 		action = 'displayMetadata',
@@ -130,60 +277,115 @@ Item('parachute', function(data, slot)
 end)
 
 Item('phone', function(data, slot)
-	local success, result = pcall(function()
-		return exports.npwd:isPhoneVisible()
-	end)
+        local success, result = pcall(function()
+                return exports.npwd:isPhoneVisible()
+        end)
 
-	if success then
-		exports.npwd:setPhoneVisible(not result)
-	end
+        if success then
+                exports.npwd:setPhoneVisible(not result)
+        end
 end)
 
 Item('clothing', function(data, slot)
-	local metadata = slot.metadata
+        local metadata = slot.metadata
 
-	if not metadata.drawable then return print('Clothing is missing drawable in metadata') end
-	if not metadata.texture then return print('Clothing is missing texture in metadata') end
+        if type(metadata) ~= 'table' then return print('Clothing metadata is invalid') end
 
-	if metadata.prop then
-		if not SetPedPreloadPropData(cache.ped, metadata.prop, metadata.drawable, metadata.texture) then
-			return print('Clothing has invalid prop for this ped')
-		end
-	elseif metadata.component then
-		if not IsPedComponentVariationValid(cache.ped, metadata.component, metadata.drawable, metadata.texture) then
-			return print('Clothing has invalid component for this ped')
-		end
-	else
-		return print('Clothing is missing prop/component id in metadata')
-	end
+        if not validateClothingMetadata(metadata) then
+                return print('Clothing has invalid configuration for this ped')
+        end
 
-	ox_inventory:useItem(data, function(data)
-		if data then
-			metadata = data.metadata
+        ox_inventory:useItem(data, function(data)
+                if not data then return end
 
-			if metadata.prop then
-				local prop = GetPedPropIndex(cache.ped, metadata.prop)
-				local texture = GetPedPropTextureIndex(cache.ped, metadata.prop)
+                metadata = data.metadata
 
-				if metadata.drawable == prop and metadata.texture == texture then
-					return ClearPedProp(cache.ped, metadata.prop)
-				end
+                if type(metadata) ~= 'table' then return end
 
-				-- { prop = 0, drawable = 2, texture = 1 } = grey beanie
-				SetPedPropIndex(cache.ped, metadata.prop, metadata.drawable, metadata.texture, false);
-			elseif metadata.component then
-				local drawable = GetPedDrawableVariation(cache.ped, metadata.component)
-				local texture = GetPedTextureVariation(cache.ped, metadata.component)
+                if metadata.prop ~= nil then
+                        local prop = GetPedPropIndex(cache.ped, metadata.prop)
+                        local texture = GetPedPropTextureIndex(cache.ped, metadata.prop)
 
-				if metadata.drawable == drawable and metadata.texture == texture then
-					return -- item matches (setup defaults so we can strip?)
-				end
+                        if metadata.drawable == prop and (metadata.texture or 0) == texture then
+                                ClearPedProp(cache.ped, metadata.prop)
+                                return
+                        end
 
-				-- { component = 4, drawable = 4, texture = 1 } = jeans w/ belt
-				SetPedComponentVariation(cache.ped, metadata.component, metadata.drawable, metadata.texture, 0);
-			end
-		end
-	end)
+                        applyClothing(metadata, true)
+                        return
+                end
+
+                if metadata.component == nil then return end
+
+                local drawable = GetPedDrawableVariation(cache.ped, metadata.component)
+                local texture = GetPedTextureVariation(cache.ped, metadata.component)
+
+                if metadata.drawable == drawable and (metadata.texture or 0) == texture then
+                        setComponentToDefault(cache.ped, metadata.component)
+
+                        if metadata.component == 11 or metadata.component == 8 then
+                                setArmsToDefault(cache.ped)
+                        end
+
+                        return
+                end
+
+                applyClothing(metadata, true)
+        end)
+end)
+
+AddEventHandler('ox_inventory:clothingUnequipped', function(metadata)
+        if type(metadata) ~= 'table' then return end
+
+        local ped = cache.ped
+
+        if not DoesEntityExist(ped) then return end
+
+        if metadata.prop ~= nil then
+                ClearPedProp(ped, metadata.prop)
+                return
+        end
+
+        local component = metadata.component
+
+        if component == nil then return end
+
+        setComponentToDefault(ped, component)
+
+        if component == 11 then
+                setArmsToDefault(ped)
+        elseif component == 8 then
+                setArmsToDefault(ped)
+        elseif component == 3 then
+                setArmsToDefault(ped)
+        end
+end)
+
+AddEventHandler('ox_inventory:clothingEquipped', function(metadata)
+        if type(metadata) ~= 'table' then return end
+
+        local ped = cache.ped
+
+        if not DoesEntityExist(ped) then return end
+
+        if metadata.prop ~= nil then
+                if GetPedPropIndex(ped, metadata.prop) == -1 then
+                        applyClothing(metadata)
+                end
+
+                return
+        end
+
+        local component = metadata.component
+
+        if component == nil then return end
+
+        local drawable = GetPedDrawableVariation(ped, component)
+        local texture = GetPedTextureVariation(ped, component)
+
+        if isComponentDefault(ped, component, drawable, texture) then
+                applyClothing(metadata)
+        end
 end)
 
 -----------------------------------------------------------------------------------------------
