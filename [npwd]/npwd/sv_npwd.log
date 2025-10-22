@@ -6010,3 +6010,6 @@
 {"level":"silly","message":{"data":[],"status":"ok"},"module":"events","timestamp":"2025-10-22T02:28:35.814Z"}
 {"level":"silly","message":"Response Promise Event npwd-contact-getAll:78457752-d93a-41e6-9b6e-ce763edd9b57 (12.3932ms), Data >>","module":"events","timestamp":"2025-10-22T02:28:35.814Z"}
 {"level":"silly","message":{"data":[],"status":"ok"},"module":"events","timestamp":"2025-10-22T02:28:35.814Z"}
+{"level":"info","message":"Executed query (SELECT id FROM npwd_marketplace_listings WHERE identifier = ? [\"AMVY495F\"]) in 76.4268ms'","module":"DBInterface","timestamp":"2025-10-22T03:04:58.311Z"}
+{"level":"info","message":"Executed query (DELETE FROM npwd_marketplace_listings WHERE identifier = ? AND reported = 0 [\"AMVY495F\"]) in 1.3453ms'","module":"DBInterface","timestamp":"2025-10-22T03:04:58.313Z"}
+{"level":"info","message":"Unloaded NPWD Player, source: (1)","module":"player","timestamp":"2025-10-22T03:04:58.313Z"}
