@@ -329,19 +329,36 @@ function L2_1(A0_2, A1_2, A2_2, A3_2, A4_2, A5_2)
       end
     end
   end
+  local recommendedArmsItem
   L16_2 = A4_2.arms
   if L16_2 then
-    L16_2 = L15_2.components
-    L17_2 = tostring
-    L18_2 = 3
+    local L17_2
+    L17_2 = L15_2.components
+    L18_2 = tostring
+    L19_2 = 3
+    L18_2 = L18_2(L19_2)
+    L19_2 = A4_2.arms
+    L17_2[L18_2] = L19_2
+    L17_2 = table
+    L17_2 = L17_2.insert
+    L18_2 = L13_2
+    L19_2 = A4_2.arms
+    L17_2(L18_2, L19_2)
+    L17_2 = CheckoutSimpleResolveClothingItemToData
+    L18_2 = A4_2.arms
     L17_2 = L17_2(L18_2)
-    L18_2 = A4_2.arms
-    L16_2[L17_2] = L18_2
-    L16_2 = table
-    L16_2 = L16_2.insert
-    L17_2 = L13_2
-    L18_2 = A4_2.arms
-    L16_2(L17_2, L18_2)
+    if L17_2 then
+      L17_2.arms = A4_2.arms
+      if type(_U) == "function" then
+        L18_2 = _U
+        L19_2 = "shop_structure.second_level.gloves"
+        L18_2 = L18_2(L19_2)
+        L17_2.label = L18_2
+      else
+        L17_2.label = "Gloves"
+      end
+      recommendedArmsItem = L17_2
+    end
   end
   L16_2 = A4_2.shoplessComponent
   if L16_2 then
@@ -434,6 +451,9 @@ function L2_1(A0_2, A1_2, A2_2, A3_2, A4_2, A5_2)
     L24_2.label = L25_2
     L24_2.arms = L21_2
     L22_2(L23_2, L24_2)
+  end
+  if recommendedArmsItem then
+    table.insert(L16_2, recommendedArmsItem)
   end
   L17_2 = DbSaveCurrentOutfit
   L18_2 = L10_2
