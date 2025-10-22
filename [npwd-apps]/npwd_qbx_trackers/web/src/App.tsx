@@ -238,7 +238,6 @@ const useTrackers = () => {
 
   const load = useCallback(async () => {
     setLoading(true);
-    setEmptyResult(null);
     setError(null);
     try {
       const payload = await fetchNui<NuiListResponse>(
@@ -252,7 +251,6 @@ const useTrackers = () => {
     } catch (err) {
       console.error('Failed to fetch tracker list', err);
       setError(locale.errorLoading);
-      setEmptyResult(false);
     } finally {
       setLoading(false);
       setLoadedOnce(true);
