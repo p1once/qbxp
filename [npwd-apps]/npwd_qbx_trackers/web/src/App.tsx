@@ -204,7 +204,7 @@ const useTrackers = () => {
   const locale = useMemo(() => getLocale(), []);
   const [query, setQuery] = useState('');
   const [entries, setEntries] = useState<Tracker[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
