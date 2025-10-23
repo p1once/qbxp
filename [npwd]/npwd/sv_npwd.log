@@ -8241,3 +8241,18 @@
 {"level":"debug","message":"Beginning database schema validation","module":"boot","timestamp":"2025-10-23T15:47:52.888Z"}
 {"level":"info","message":"Successfully started","timestamp":"2025-10-23T15:47:52.896Z"}
 {"level":"error","message":"Error executing (SELECT COUNT(*) as count\n                       FROM information_schema.tables\n                       WHERE table_schema = ?\n                         AND table_name = ? [\"Qbox_EBD514\",\"players\"]) with error message connect ECONNREFUSED 127.0.0.1:3306","module":"DBInterface","timestamp":"2025-10-23T15:47:52.937Z"}
+{"level":"debug","message":"Marketplace service started","module":"marketplace","timestamp":"2025-10-23T15:48:59.492Z"}
+{"level":"debug","message":"Call service started","module":"calls","timestamp":"2025-10-23T15:48:59.494Z"}
+{"level":"debug","message":"Player Service started","module":"player","timestamp":"2025-10-23T15:48:59.494Z"}
+{"level":"info","message":"Loading QBX bridge....","timestamp":"2025-10-23T15:48:59.494Z"}
+{"level":"info","message":"QBX bridge initialized","timestamp":"2025-10-23T15:48:59.494Z"}
+{"level":"debug","message":"Boot service started","module":"boot","timestamp":"2025-10-23T15:48:59.494Z"}
+{"level":"debug","message":"Messages service started","module":"messages","timestamp":"2025-10-23T15:48:59.494Z"}
+{"level":"debug","message":"Notes service started","module":"notes","timestamp":"2025-10-23T15:48:59.495Z"}
+{"level":"debug","message":"Contacts service started","module":"contact","timestamp":"2025-10-23T15:48:59.495Z"}
+{"level":"debug","message":"Photo service started","module":"photo","timestamp":"2025-10-23T15:48:59.517Z"}
+{"level":"debug","message":"Twitter service started","module":"twitter","timestamp":"2025-10-23T15:48:59.518Z"}
+{"level":"debug","message":"Match service started","module":"match","timestamp":"2025-10-23T15:48:59.518Z"}
+{"level":"debug","message":"Beginning database schema validation","module":"boot","timestamp":"2025-10-23T15:49:00.221Z"}
+{"level":"info","message":"Successfully started","timestamp":"2025-10-23T15:49:00.228Z"}
+{"level":"error","message":"Error executing (SELECT COUNT(*) as count\n                       FROM information_schema.tables\n                       WHERE table_schema = ?\n                         AND table_name = ? [\"Qbox_EBD514\",\"players\"]) with error message connect ECONNREFUSED 127.0.0.1:3306","module":"DBInterface","timestamp":"2025-10-23T15:49:00.269Z"}
