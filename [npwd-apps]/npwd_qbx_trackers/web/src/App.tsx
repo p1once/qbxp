@@ -234,6 +234,7 @@ const useTrackers = () => {
   const [loading, setLoading] = useState(() => !hasCachedEntries);
   const [error, setError] = useState<string | null>(null);
   const [loadedOnce, setLoadedOnce] = useState(() => hasCachedEntries);
+  const [isReady, setIsReady] = useState(() => hasCachedEntries);
   const skipNextVisibility = useRef(true);
 
   const load = useCallback(async () => {
@@ -245,15 +246,21 @@ const useTrackers = () => {
         undefined,
         { status: 'ok', data: mockTrackers },
       );
-      const list = Array.isArray(payload) ? payload : payload?.data ?? [];
-      setEntries(list);
-      cachedState = { entries: list };
+      const rawList = Array.isArray(payload) ? payload : payload?.data;
+      if (!Array.isArray(rawList)) {
+        throw new Error('Invalid tracker list payload');
+      }
+      setEntries(rawList);
+      cachedState = { entries: rawList };
+      if (rawList.length > 0) {
+        setLoadedOnce(true);
+      }
+      setIsReady(true);
     } catch (err) {
       console.error('Failed to fetch tracker list', err);
       setError(locale.errorLoading);
     } finally {
       setLoading(false);
-      setLoadedOnce(true);
     }
   }, [locale.errorLoading]);
 
@@ -294,6 +301,7 @@ const useTrackers = () => {
     loading,
     error,
     loadedOnce,
+    ready: isReady,
   };
 };
 
@@ -317,9 +325,9 @@ const useDelayedEmptyState = (shouldDisplay: boolean, delay = 220) => {
 };
 
 const TrackersApp = () => {
-  const { locale, query, setQuery, entries, refresh, loading, error, loadedOnce } = useTrackers();
+  const { locale, query, setQuery, entries, refresh, loading, error, ready } = useTrackers();
   const showLoading = useDelayedVisibility(loading);
-  const shouldShowEmpty = !loading && loadedOnce && entries.length === 0 && !error;
+  const shouldShowEmpty = ready && !loading && entries.length === 0 && !error;
   const showEmpty = useDelayedEmptyState(shouldShowEmpty);
 
   const onPing = useCallback(async (plate: string) => {
