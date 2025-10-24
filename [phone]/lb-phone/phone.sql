@@ -966,11 +966,44 @@ CREATE TABLE IF NOT EXISTS `phone_voice_memos_recordings` (
     FOREIGN KEY (`phone_number`) REFERENCES `phone_phones`(`phone_number`) ON DELETE CASCADE ON UPDATE CASCADE
 ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- Drop existing triggers to avoid duplicate definition errors when rerunning the script
+DROP TRIGGER IF EXISTS phone_instagram_increment_post_count;
+DROP TRIGGER IF EXISTS phone_instagram_decrement_post_count;
+DROP TRIGGER IF EXISTS phone_instagram_increment_story_count;
+DROP TRIGGER IF EXISTS phone_instagram_decrement_story_count;
+DROP TRIGGER IF EXISTS phone_instagram_increment_comment_count;
+DROP TRIGGER IF EXISTS phone_instagram_decrement_comment_count;
+DROP TRIGGER IF EXISTS phone_instagram_increment_like_count;
+DROP TRIGGER IF EXISTS phone_instagram_decrement_like_count;
+DROP TRIGGER IF EXISTS phone_instagram_update_counts_after_follow;
+DROP TRIGGER IF EXISTS phone_instagram_update_counts_after_unfollow;
+DROP TRIGGER IF EXISTS phone_twitter_update_counts_after_follow;
+DROP TRIGGER IF EXISTS phone_twitter_update_counts_after_unfollow;
+DROP TRIGGER IF EXISTS phone_twitter_update_like_count_after_like;
+DROP TRIGGER IF EXISTS phone_twitter_update_like_count_after_unlike;
+DROP TRIGGER IF EXISTS phone_twitter_update_retweet_count_after_retweet;
+DROP TRIGGER IF EXISTS phone_twitter_update_retweet_count_after_unretweet;
+DROP TRIGGER IF EXISTS phone_tiktok_update_counts_after_follow;
+DROP TRIGGER IF EXISTS phone_tiktok_update_counts_after_unfollow;
+DROP TRIGGER IF EXISTS phone_tiktok_increment_video_count;
+DROP TRIGGER IF EXISTS phone_tiktok_increment_video_likes;
+DROP TRIGGER IF EXISTS phone_tiktok_decrement_video_likes;
+DROP TRIGGER IF EXISTS phone_tiktok_increment_account_likes;
+DROP TRIGGER IF EXISTS phone_tiktok_decrement_account_likes;
+DROP TRIGGER IF EXISTS phone_tiktok_increment_video_views;
+DROP TRIGGER IF EXISTS phone_tiktok_increment_video_saves;
+DROP TRIGGER IF EXISTS phone_tiktok_decrement_video_saves;
+DROP TRIGGER IF EXISTS phone_tiktok_increment_video_comments;
+DROP TRIGGER IF EXISTS phone_tiktok_decrement_video_comments;
+DROP TRIGGER IF EXISTS phone_tiktok_increment_comment_likes;
+DROP TRIGGER IF EXISTS phone_tiktok_decrement_comment_likes;
+DROP TRIGGER IF EXISTS phone_tiktok_update_last_message;
+
 DELIMITER //
 
 -- Instagram triggers
 -- Triggers for post counts
-CREATE TRIGGER IF NOT EXISTS phone_instagram_increment_post_count
+CREATE TRIGGER phone_instagram_increment_post_count
 AFTER INSERT ON phone_instagram_posts
 FOR EACH ROW
 BEGIN
@@ -979,7 +1012,7 @@ BEGIN
     WHERE username = NEW.username;
 END;
 
-CREATE TRIGGER IF NOT EXISTS phone_instagram_decrement_post_count
+CREATE TRIGGER phone_instagram_decrement_post_count
 AFTER DELETE ON phone_instagram_posts
 FOR EACH ROW
 BEGIN
@@ -989,7 +1022,7 @@ BEGIN
 END;
 
 -- Trigger for story counts
-CREATE TRIGGER IF NOT EXISTS phone_instagram_increment_story_count
+CREATE TRIGGER phone_instagram_increment_story_count
 AFTER INSERT ON phone_instagram_stories
 FOR EACH ROW
 BEGIN
@@ -998,7 +1031,7 @@ BEGIN
     WHERE username = NEW.username;
 END;
 
-CREATE TRIGGER IF NOT EXISTS phone_instagram_decrement_story_count
+CREATE TRIGGER phone_instagram_decrement_story_count
 AFTER DELETE ON phone_instagram_stories
 FOR EACH ROW
 BEGIN
@@ -1008,7 +1041,7 @@ BEGIN
 END;
 
 -- Trigger for comment counts
-CREATE TRIGGER IF NOT EXISTS phone_instagram_increment_comment_count
+CREATE TRIGGER phone_instagram_increment_comment_count
 AFTER INSERT ON phone_instagram_comments
 FOR EACH ROW
 BEGIN
@@ -1017,7 +1050,7 @@ BEGIN
     WHERE id = NEW.post_id;
 END;
 
-CREATE TRIGGER IF NOT EXISTS phone_instagram_decrement_comment_count
+CREATE TRIGGER phone_instagram_decrement_comment_count
 AFTER DELETE ON phone_instagram_comments
 FOR EACH ROW
 BEGIN
@@ -1027,7 +1060,7 @@ BEGIN
 END;
 
 -- Trigger for like counts
-CREATE TRIGGER IF NOT EXISTS phone_instagram_increment_like_count
+CREATE TRIGGER phone_instagram_increment_like_count
 AFTER INSERT ON phone_instagram_likes
 FOR EACH ROW
 BEGIN
@@ -1042,7 +1075,7 @@ BEGIN
     END IF;
 END;
 
-CREATE TRIGGER IF NOT EXISTS phone_instagram_decrement_like_count
+CREATE TRIGGER phone_instagram_decrement_like_count
 AFTER DELETE ON phone_instagram_likes
 FOR EACH ROW
 BEGIN
@@ -1058,7 +1091,7 @@ BEGIN
 END;
 
 -- Triggers for follower counts
-CREATE TRIGGER IF NOT EXISTS phone_instagram_update_counts_after_follow
+CREATE TRIGGER phone_instagram_update_counts_after_follow
 AFTER INSERT ON phone_instagram_follows
 FOR EACH ROW
 BEGIN
@@ -1071,7 +1104,7 @@ BEGIN
     WHERE username = NEW.follower;
 END;
 
-CREATE TRIGGER IF NOT EXISTS phone_instagram_update_counts_after_unfollow
+CREATE TRIGGER phone_instagram_update_counts_after_unfollow
 AFTER DELETE ON phone_instagram_follows
 FOR EACH ROW
 BEGIN
@@ -1085,7 +1118,7 @@ BEGIN
 END;
 
 -- Triggers for phone_twitter_follows
-CREATE TRIGGER IF NOT EXISTS phone_twitter_update_counts_after_follow
+CREATE TRIGGER phone_twitter_update_counts_after_follow
 AFTER INSERT ON phone_twitter_follows
 FOR EACH ROW
 BEGIN
@@ -1100,7 +1133,7 @@ BEGIN
     WHERE username = NEW.follower;
 END;
 
-CREATE TRIGGER IF NOT EXISTS phone_twitter_update_counts_after_unfollow
+CREATE TRIGGER phone_twitter_update_counts_after_unfollow
 AFTER DELETE ON phone_twitter_follows
 FOR EACH ROW
 BEGIN
@@ -1115,7 +1148,7 @@ BEGIN
     WHERE username = OLD.follower;
 END;
 
-CREATE TRIGGER IF NOT EXISTS phone_twitter_update_like_count_after_like
+CREATE TRIGGER phone_twitter_update_like_count_after_like
 AFTER INSERT ON phone_twitter_likes
 FOR EACH ROW
 BEGIN
@@ -1124,7 +1157,7 @@ BEGIN
     WHERE id = NEW.tweet_id;
 END;
 
-CREATE TRIGGER IF NOT EXISTS phone_twitter_update_like_count_after_unlike
+CREATE TRIGGER phone_twitter_update_like_count_after_unlike
 AFTER DELETE ON phone_twitter_likes
 FOR EACH ROW
 BEGIN
@@ -1133,7 +1166,7 @@ BEGIN
     WHERE id = OLD.tweet_id;
 END;
 
-CREATE TRIGGER IF NOT EXISTS phone_twitter_update_retweet_count_after_retweet
+CREATE TRIGGER phone_twitter_update_retweet_count_after_retweet
 AFTER INSERT ON phone_twitter_retweets
 FOR EACH ROW
 BEGIN
@@ -1142,7 +1175,7 @@ BEGIN
     WHERE id = NEW.tweet_id;
 END;
 
-CREATE TRIGGER IF NOT EXISTS phone_twitter_update_retweet_count_after_unretweet
+CREATE TRIGGER phone_twitter_update_retweet_count_after_unretweet
 AFTER DELETE ON phone_twitter_retweets
 FOR EACH ROW
 BEGIN
@@ -1153,7 +1186,7 @@ END;
 
 -- Triggers for phone_tiktok_follows
 -- Increment phone_tiktok_accounts.follower_count and phone_tiktok_accounts.following_count after inserting a new row into phone_tiktok_follows
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_update_counts_after_follow
+CREATE TRIGGER phone_tiktok_update_counts_after_follow
 AFTER INSERT ON phone_tiktok_follows
 FOR EACH ROW
 BEGIN
@@ -1169,7 +1202,7 @@ BEGIN
 END;
 
 -- Decrement phone_tiktok_accounts.follower_count and phone_tiktok_accounts.following_count after deleting a row from phone_tiktok_follows
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_update_counts_after_unfollow
+CREATE TRIGGER phone_tiktok_update_counts_after_unfollow
 AFTER DELETE ON phone_tiktok_follows
 FOR EACH ROW
 BEGIN
@@ -1186,7 +1219,7 @@ END;
 
 -- Trigger for phone_tiktok_videos
 -- Trigger to increment phone_tiktok_accounts.video_count after inserting a new row into phone_tiktok_videos
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_increment_video_count
+CREATE TRIGGER phone_tiktok_increment_video_count
 AFTER INSERT ON phone_tiktok_videos
 FOR EACH ROW
 BEGIN
@@ -1197,7 +1230,7 @@ END;
 
 -- Trigger for phone_tiktok_likes
 -- Trigger to increment phone_tiktok_videos.likes after inserting a new row into phone_tiktok_likes
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_increment_video_likes
+CREATE TRIGGER phone_tiktok_increment_video_likes
 AFTER INSERT ON phone_tiktok_likes
 FOR EACH ROW
 BEGIN
@@ -1207,7 +1240,7 @@ BEGIN
 END;
 
 -- Trigger to decrement phone_tiktok_videos.likes after deleting a row from phone_tiktok_likes
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_decrement_video_likes
+CREATE TRIGGER phone_tiktok_decrement_video_likes
 AFTER DELETE ON phone_tiktok_likes
 FOR EACH ROW
 BEGIN
@@ -1217,7 +1250,7 @@ BEGIN
 END;
 
 -- Trigger to increment phone_tiktok_accounts.like_count for the user after a new like is inserted into phone_tiktok_likes
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_increment_account_likes
+CREATE TRIGGER phone_tiktok_increment_account_likes
 AFTER INSERT ON phone_tiktok_likes
 FOR EACH ROW
 BEGIN
@@ -1228,7 +1261,7 @@ BEGIN
 END;
 
 -- Trigger to decrement phone_tiktok_accounts.like_count for the user after a like is removed from phone_tiktok_likes
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_decrement_account_likes
+CREATE TRIGGER phone_tiktok_decrement_account_likes
 AFTER DELETE ON phone_tiktok_likes
 FOR EACH ROW
 BEGIN
@@ -1240,7 +1273,7 @@ END;
 
 -- Triggers for phone_tiktok_views
 -- Trigger to increment phone_tiktok_videos.views when a new view is inserted into phone_tiktok_views
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_increment_video_views
+CREATE TRIGGER phone_tiktok_increment_video_views
 AFTER INSERT ON phone_tiktok_views
 FOR EACH ROW
 BEGIN
@@ -1251,7 +1284,7 @@ END;
 
 -- Triggers for phone_tiktok_saves
 -- Increment saves after inserting a new row into phone_tiktok_saves
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_increment_video_saves
+CREATE TRIGGER phone_tiktok_increment_video_saves
 AFTER INSERT ON phone_tiktok_saves
 FOR EACH ROW
 BEGIN
@@ -1261,7 +1294,7 @@ BEGIN
 END;
 
 -- Decrement saves after deleting a row from phone_tiktok_saves
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_decrement_video_saves
+CREATE TRIGGER phone_tiktok_decrement_video_saves
 AFTER DELETE ON phone_tiktok_saves
 FOR EACH ROW
 BEGIN
@@ -1272,7 +1305,7 @@ END;
 
 -- Triggers for phone_tiktok_comments
 -- Increment phone_tiktok_videos.comments after inserting a new row into phone_tiktok_comments
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_increment_video_comments
+CREATE TRIGGER phone_tiktok_increment_video_comments
 AFTER INSERT ON phone_tiktok_comments
 FOR EACH ROW
 BEGIN
@@ -1282,7 +1315,7 @@ BEGIN
 END;
 
 -- Decrement phone_tiktok_videos.comments after deleting a row from phone_tiktok_comments
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_decrement_video_comments
+CREATE TRIGGER phone_tiktok_decrement_video_comments
 BEFORE DELETE ON phone_tiktok_comments
 FOR EACH ROW
 BEGIN
@@ -1301,7 +1334,7 @@ END;
 
 -- Triggers for phone_tiktok_comments_likes
 -- Increment phone_tiktok_comments.likes after inserting a new row into phone_tiktok_comments_likes
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_increment_comment_likes
+CREATE TRIGGER phone_tiktok_increment_comment_likes
 AFTER INSERT ON phone_tiktok_comments_likes
 FOR EACH ROW
 BEGIN
@@ -1311,7 +1344,7 @@ BEGIN
 END;
 
 -- Decrement phone_tiktok_comments.likes after deleting a row from phone_tiktok_comments_likes
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_decrement_comment_likes
+CREATE TRIGGER phone_tiktok_decrement_comment_likes
 AFTER DELETE ON phone_tiktok_comments_likes
 FOR EACH ROW
 BEGIN
@@ -1322,7 +1355,7 @@ END;
 
 -- Triggers for phone_tiktok_messages
 -- Trigger to update phone_tiktok_channels.last_message after a new message is inserted into phone_tiktok_messages
-CREATE TRIGGER IF NOT EXISTS phone_tiktok_update_last_message
+CREATE TRIGGER phone_tiktok_update_last_message
 AFTER INSERT ON phone_tiktok_messages
 FOR EACH ROW
 BEGIN
