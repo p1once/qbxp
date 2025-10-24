@@ -103,6 +103,65 @@ local fixQueries = {}
 local missingTables = {}
 local updateChanges = false
 
+local function resetValidationState()
+        fixQueries = {}
+        missingTables = {}
+        updateChanges = false
+end
+
+local function splitSqlStatements(sql)
+        local statements = {}
+        local currentStatement
+
+        for line in sql:gmatch("[^\r\n]+") do
+                local strippedLine = line:gsub("%-%-.*$", "")
+
+                if strippedLine:find("%S") then
+                        currentStatement = (currentStatement or "") .. strippedLine .. "\n"
+
+                        if strippedLine:find(";%s*$") then
+                                currentStatement = currentStatement:gsub(";%s*$", "")
+                                statements[#statements+1] = currentStatement
+                                currentStatement = nil
+                        end
+                end
+        end
+
+        if currentStatement and currentStatement:find("%S") then
+                statements[#statements+1] = currentStatement
+        end
+
+        return statements
+end
+
+local function importPhoneSql()
+        local phoneSql = LoadResourceFile(GetCurrentResourceName(), "phone.sql")
+
+        if not phoneSql or phoneSql == "" then
+                return false, "Unable to read phone.sql"
+        end
+
+        local statements = splitSqlStatements(phoneSql)
+
+        if #statements == 0 then
+                return false, "phone.sql did not contain any executable statements"
+        end
+
+        local ok, result = pcall(function()
+                return MySQL.transaction.await(statements)
+        end)
+
+        if not ok then
+                return false, result
+        end
+
+        if not result then
+                return false, "MySQL.transaction failed while importing phone.sql"
+        end
+
+        return true
+end
+
 -- Photo albums update
 local function validatePhotoAlbums()
 	if not tables.phone_photo_albums then
@@ -288,19 +347,11 @@ local function validateMessages()
 	updateChanges = true
 end
 
-validatePhotoAlbums()
-validateNotificationsId()
-validateMessages()
-
-if updateChanges then
-	fetchTables()
-end
-
 local function getLastArg(column)
-	local lastArg = column.type
+        local lastArg = column.type
 
-	if column.length and column.type ~= "LONGTEXT" and column.type ~= "TEXT" then
-		lastArg = lastArg .. ("(%s)"):format(column.length)
+        if column.length and column.type ~= "LONGTEXT" and column.type ~= "TEXT" then
+                lastArg = lastArg .. ("(%s)"):format(column.length)
 	end
 
 	if not column.allowNull then
@@ -311,76 +362,105 @@ local function getLastArg(column)
 		lastArg = lastArg .. (" DEFAULT %s"):format(column.default)
 	end
 
-	return lastArg
+        return lastArg
 end
 
-for tableName, columns in pairs(defaultTables) do
-	local checkTable = tables[tableName]
+local function runDatabaseValidation()
+        resetValidationState()
 
-	if not checkTable then
-		infoprint("error", ("Missing table ^5%s^7 in the database. Please re-run the phone.sql file."):format(tableName))
+        fetchTables()
 
-		missingTables[#missingTables+1] = tableName
+        validatePhotoAlbums()
+        validateNotificationsId()
+        validateMessages()
 
-		goto continue
-	end
+        if updateChanges then
+                fetchTables()
+        end
 
-	for i = 1, #columns do
-		local defaultColumn = columns[i]
-		local column = checkTable[defaultColumn.column]
+        for tableName, columns in pairs(defaultTables) do
+                local checkTable = tables[tableName]
 
-		if not checkTable[defaultColumn.column] then
-			infoprint("error", ("Missing column ^5%s^7 in the table ^5%s^7."):format(defaultColumn.column, tableName))
+                if not checkTable then
+                        infoprint("error", ("Missing table ^5%s^7 in the database. Please re-run the phone.sql file."):format(tableName))
 
-			if not defaultColumn.isKey then
-				fixQueries[#fixQueries+1] = ("ALTER TABLE `%s` ADD COLUMN `%s` %s"):format(tableName, defaultColumn.column, getLastArg(defaultColumn))
-			else
-				infoprint("warning", ("Column ^5%s^7 in the table ^5%s^7 is a key and cannot be added automatically. Check the #updates channel for a query to run, or ask in #customer-support"):format(defaultColumn.column, tableName))
-			end
+                        missingTables[#missingTables+1] = tableName
 
-			goto continueColumns
-		end
+                        goto continue
+                end
 
-		if defaultColumn.type ~= column.type then
-			infoprint("warning", ("Column ^5%s^7 in the table ^5%s^7 has the wrong data type."):format(defaultColumn.column, tableName))
+                for i = 1, #columns do
+                        local defaultColumn = columns[i]
+                        local column = checkTable[defaultColumn.column]
 
-			if not defaultColumn.isKey and not column.isKey then
-				fixQueries[#fixQueries+1] = ("ALTER TABLE `%s` MODIFY COLUMN `%s` %s"):format(tableName, defaultColumn.column, getLastArg(defaultColumn))
-			else
-				infoprint("warning", ("Column ^5%s^7 in the table ^5%s^7 is a key and cannot be modified automatically. Check the #updates channel for a query to run, or ask in #customer-support"):format(defaultColumn.column, tableName))
-			end
+                        if not checkTable[defaultColumn.column] then
+                                infoprint("error", ("Missing column ^5%s^7 in the table ^5%s^7."):format(defaultColumn.column, tableName))
 
-			goto continueColumns
-		end
+                                if not defaultColumn.isKey then
+                                        fixQueries[#fixQueries+1] = ("ALTER TABLE `%s` ADD COLUMN `%s` %s"):format(tableName, defaultColumn.column, getLastArg(defaultColumn))
+                                else
+                                        infoprint("warning", ("Column ^5%s^7 in the table ^5%s^7 is a key and cannot be added automatically. Check the #updates channel for a query to run, or ask in #customer-support"):format(defaultColumn.column, tableName))
+                                end
 
-		if defaultColumn.length and defaultColumn.length > column.length then
-			infoprint("warning", ("Column ^5%s^7 in the table ^5%s^7 has the wrong length."):format(defaultColumn.column, tableName))
+                                goto continueColumns
+                        end
 
-			if not defaultColumn.isKey and not column.isKey then
-				fixQueries[#fixQueries+1] = ("ALTER TABLE `%s` MODIFY COLUMN `%s` %s"):format(tableName, defaultColumn.column, getLastArg(defaultColumn))
-			else
-				infoprint("warning", ("Column ^5%s^7 in the table ^5%s^7 is a key and cannot be modified automatically. Check the #updates channel for a query to run, or ask in #customer-support"):format(defaultColumn.column, tableName))
-			end
+                        if defaultColumn.type ~= column.type then
+                                infoprint("warning", ("Column ^5%s^7 in the table ^5%s^7 has the wrong data type."):format(defaultColumn.column, tableName))
 
-			goto continueColumns
-		end
+                                if not defaultColumn.isKey and not column.isKey then
+                                        fixQueries[#fixQueries+1] = ("ALTER TABLE `%s` MODIFY COLUMN `%s` %s"):format(tableName, defaultColumn.column, getLastArg(defaultColumn))
+                                else
+                                        infoprint("warning", ("Column ^5%s^7 in the table ^5%s^7 is a key and cannot be modified automatically. Check the #updates channel for a query to run, or ask in #customer-support"):format(defaultColumn.column, tableName))
+                                end
 
-		if defaultColumn.collation and defaultColumn.collation ~= column.collation then
-			infoprint("warning", ("Column ^5%s^7 in the table ^5%s^7 has the wrong collation."):format(defaultColumn.column, tableName))
-		end
+                                goto continueColumns
+                        end
 
-		::continueColumns::
-	end
+                        if defaultColumn.length and defaultColumn.length > column.length then
+                                infoprint("warning", ("Column ^5%s^7 in the table ^5%s^7 has the wrong length."):format(defaultColumn.column, tableName))
 
-    ::continue::
+                                if not defaultColumn.isKey and not column.isKey then
+                                        fixQueries[#fixQueries+1] = ("ALTER TABLE `%s` MODIFY COLUMN `%s` %s"):format(tableName, defaultColumn.column, getLastArg(defaultColumn))
+                                else
+                                        infoprint("warning", ("Column ^5%s^7 in the table ^5%s^7 is a key and cannot be modified automatically. Check the #updates channel for a query to run, or ask in #customer-support"):format(defaultColumn.column, tableName))
+                                end
+
+                                goto continueColumns
+                        end
+
+                        if defaultColumn.collation and defaultColumn.collation ~= column.collation then
+                                infoprint("warning", ("Column ^5%s^7 in the table ^5%s^7 has the wrong collation."):format(defaultColumn.column, tableName))
+                        end
+
+                        ::continueColumns::
+                end
+
+        ::continue::
+        end
+
+        return #fixQueries, #missingTables > 0
 end
 
-local changes = #fixQueries
-local missingAnyTables = #missingTables > 0
+local changes, missingAnyTables = runDatabaseValidation()
+
+if missingAnyTables and Config.DatabaseChecker.AutoFix then
+        local success, errorMessage = importPhoneSql()
+
+        if success then
+                infoprint("success", "Missing database tables detected. phone.sql has been imported automatically.")
+
+                fetchTables()
+
+                changes, missingAnyTables = runDatabaseValidation()
+        else
+                infoprint("error", ("Failed to automatically import phone.sql: %s"):format(errorMessage or "unknown error"))
+        end
+end
 
 if changes > 0 then
-	if Config.DatabaseChecker.AutoFix then
-		infoprint("info", ("Fixing database, applying %i changes..."):format(changes))
+        if Config.DatabaseChecker.AutoFix then
+                infoprint("info", ("Fixing database, applying %i changes..."):format(changes))
 
 		local success = MySQL.transaction.await(fixQueries)
 
