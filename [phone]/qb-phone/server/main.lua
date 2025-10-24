@@ -10,6 +10,57 @@ local WebHook = Config.serverwebhook
 local bannedCharacters = {'%','$',';'}
 local TWData = {}
 
+local function getGaragesConfig()
+    if type(Config.Garages) == 'table' then
+        return Config.Garages
+    end
+
+    if type(Config.garages) == 'table' then
+        return Config.garages
+    end
+
+    local success, garages = pcall(function()
+        return exports['qbx_garages']:GetGarages()
+    end)
+
+    if success and type(garages) == 'table' then
+        return garages
+    end
+
+    return nil
+end
+
+local function getGarageLabel(garageId)
+    if not garageId then return nil end
+
+    local garages = getGaragesConfig()
+    if type(garages) ~= 'table' then
+        return nil
+    end
+
+    if type(garageId) == 'number' then
+        local garage = garages[garageId]
+        if garage then
+            return garage.label or garage.name
+        end
+    end
+
+    local garage = garages[garageId]
+    if garage then
+        return garage.label or garage.name
+    end
+
+    local numericGarageId = tonumber(garageId)
+    if numericGarageId then
+        garage = garages[numericGarageId]
+        if garage then
+            return garage.label or garage.name
+        end
+    end
+
+    return nil
+end
+
 -- Functions
 
 local function GetOnlineStatus(number)
@@ -311,10 +362,15 @@ QBCore.Functions.CreateCallback('qb-phone:server:GetPhoneData', function(source,
         if garageresult[1] ~= nil then
             for _, v in pairs(garageresult) do
                 local vehicleModel = v.vehicle
-                if (QBCore.Shared.Vehicles[vehicleModel] ~= nil) and (Config.Garages[tonumber(v.garage)] ~= nil) then
-                    v.garage = Config.Garages[tonumber(v.garage)].name
-                    v.vehicle = QBCore.Shared.Vehicles[vehicleModel].name
-                    v.brand = QBCore.Shared.Vehicles[vehicleModel].brand
+                local vehicleData = QBCore.Shared.Vehicles[vehicleModel]
+                if vehicleData then
+                    v.vehicle = vehicleData.name
+                    v.brand = vehicleData.brand
+                end
+
+                local garageLabel = getGarageLabel(v.garage)
+                if garageLabel then
+                    v.garage = garageLabel
                 end
             end
             PhoneData.Garage = garageresult
