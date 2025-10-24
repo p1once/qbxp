@@ -17,6 +17,7 @@ ui_page 'html/index.html'
 
 shared_scripts {
     'config.lua',
+    '@qb-apartments/config.lua',
 }
 
 client_scripts {
@@ -27,6 +28,7 @@ client_scripts {
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
+    '@qb-garages/config.lua',
 }
 
 files {

@@ -27,12 +27,6 @@ PhoneData = {
     Images = {},
 }
 
-local lapRacesExport = Config.lapraces and Config.lapraces:gsub(':$', '') or nil
-
-local function isLapRacesAvailable()
-    return lapRacesExport and GetResourceState(lapRacesExport) == 'started'
-end
-
 
 
 -- Functions
@@ -260,8 +254,6 @@ local function LoadPhone()
             PhoneData.Adverts = pData.Adverts
         end
 
-        PhoneData.GarageVehicles = pData.Garage or {}
-
         if pData.CryptoTransactions ~= nil and next(pData.CryptoTransactions) ~= nil then
             PhoneData.CryptoTransactions = pData.CryptoTransactions
         end
@@ -321,8 +313,8 @@ local function OpenPhone()
                 newPhoneProp()
             end)
 
-            QBCore.Functions.TriggerCallback('qb-phone:server:GetGarageVehicles', function(vehicles)
-                PhoneData.GarageVehicles = vehicles or {}
+            QBCore.Functions.TriggerCallback('qb-garage:server:GetPlayerVehicles1', function(vehicles)
+                PhoneData.GarageVehicles = vehicles
             end)
         else
             QBCore.Functions.Notify("You don't have a phone", "error")
@@ -1062,7 +1054,7 @@ RegisterNUICallback('HasCreatedRace', function(_, cb)
 end)
 
 RegisterNUICallback('IsInRace', function(_, cb)
-    local InRace = isLapRacesAvailable() and exports[lapRacesExport]:IsInRace() or false
+    local InRace = exports['qb-lapraces']:IsInRace()
     cb(InRace)
 end)
 
@@ -1070,7 +1062,7 @@ RegisterNUICallback('IsAuthorizedToCreateRaces', function(data, cb)
     QBCore.Functions.TriggerCallback(Config.lapraces ..'server:IsAuthorizedToCreateRaces', function(IsAuthorized, NameAvailable)
         data = {
             IsAuthorized = IsAuthorized,
-            IsBusy = isLapRacesAvailable() and exports[lapRacesExport]:IsInEditor() or false,
+            IsBusy = exports['qb-lapraces']:IsInEditor(),
             IsNameAvailable = NameAvailable,
         }
         cb(data)
@@ -1109,9 +1101,9 @@ end)
 
 RegisterNUICallback('IsBusyCheck', function(data, cb)
     if data.check == "editor" then
-        cb(isLapRacesAvailable() and exports[lapRacesExport]:IsInEditor() or false)
+        cb(exports['qb-lapraces']:IsInEditor())
     else
-        cb(isLapRacesAvailable() and exports[lapRacesExport]:IsInRace() or false)
+        cb(exports['qb-lapraces']:IsInRace())
     end
 end)
 
