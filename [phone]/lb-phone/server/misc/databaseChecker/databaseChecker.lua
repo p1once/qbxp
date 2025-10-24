@@ -1,6 +1,8 @@
 local shouldGenerateTables = false
 
-if not Config.DatabaseChecker?.Enabled and not shouldGenerateTables then
+local databaseCheckerEnabled = Config.DatabaseChecker and Config.DatabaseChecker.Enabled
+
+if not databaseCheckerEnabled and not shouldGenerateTables then
 	debugprint("Database checker is disabled")
 	return
 end
