@@ -50,4 +50,3 @@ escrow_ignore {
     "types.lua"
 }
 
-dependency '/assetpacks'
