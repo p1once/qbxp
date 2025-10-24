@@ -63,6 +63,29 @@ end
 
 -- Functions
 
+local function getPlayerGarageVehicles(citizenId)
+    local garageresult = MySQL.query.await('SELECT * FROM player_vehicles WHERE citizenid = ?', { citizenId })
+    if not garageresult or not garageresult[1] then
+        return {}
+    end
+
+    for _, vehicle in pairs(garageresult) do
+        local vehicleModel = vehicle.vehicle
+        local vehicleData = QBCore.Shared.Vehicles[vehicleModel]
+        if vehicleData then
+            vehicle.vehicle = vehicleData.name
+            vehicle.brand = vehicleData.brand
+        end
+
+        local garageLabel = getGarageLabel(vehicle.garage)
+        if garageLabel then
+            vehicle.garage = garageLabel
+        end
+    end
+
+    return garageresult
+end
+
 local function GetOnlineStatus(number)
     local Target = QBCore.Functions.GetPlayerByPhone(number)
     local retval = false
@@ -358,23 +381,7 @@ QBCore.Functions.CreateCallback('qb-phone:server:GetPhoneData', function(source,
             PhoneData.Invoices = invoices
         end
 
-        local garageresult = MySQL.query.await('SELECT * FROM player_vehicles WHERE citizenid = ?', {Player.PlayerData.citizenid})
-        if garageresult[1] ~= nil then
-            for _, v in pairs(garageresult) do
-                local vehicleModel = v.vehicle
-                local vehicleData = QBCore.Shared.Vehicles[vehicleModel]
-                if vehicleData then
-                    v.vehicle = vehicleData.name
-                    v.brand = vehicleData.brand
-                end
-
-                local garageLabel = getGarageLabel(v.garage)
-                if garageLabel then
-                    v.garage = garageLabel
-                end
-            end
-            PhoneData.Garage = garageresult
-        end
+        PhoneData.Garage = getPlayerGarageVehicles(Player.PlayerData.citizenid)
 
         local messages = MySQL.query.await('SELECT * FROM phone_messages WHERE citizenid = ?', {Player.PlayerData.citizenid})
         if messages ~= nil and next(messages) ~= nil then
@@ -425,6 +432,16 @@ QBCore.Functions.CreateCallback('qb-phone:server:GetPhoneData', function(source,
         end
         cb(PhoneData)
     end
+end)
+
+QBCore.Functions.CreateCallback('qb-phone:server:GetGarageVehicles', function(source, cb)
+    local player = QBCore.Functions.GetPlayer(source)
+    if not player then
+        cb({})
+        return
+    end
+
+    cb(getPlayerGarageVehicles(player.PlayerData.citizenid))
 end)
 
 QBCore.Functions.CreateCallback('qb-phone:server:PayInvoice', function(source, cb, society, amount, invoiceId, sendercitizenid)
