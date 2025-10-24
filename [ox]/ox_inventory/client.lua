@@ -1246,13 +1246,11 @@ RegisterNetEvent('ox_inventory:setPlayerInventory', function(currentDrops, inven
 
 	local phone = Items.phone
 
-        if phone then
-                if phone.count < 1 then
-                        TriggerEvent('lb-phone:itemRemoved')
-                else
-                        TriggerEvent('lb-phone:itemAdded')
-                end
-        end
+	if phone and phone.count < 1 then
+		pcall(function()
+			return exports.npwd:setPhoneDisabled(true)
+		end)
+	end
 
 	client.setPlayerData('inventory', inventory)
 	client.setPlayerData('weight', weight)

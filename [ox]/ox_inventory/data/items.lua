@@ -154,13 +154,13 @@ return {
         client = {
             add = function(total)
                 if total > 0 then
-                    TriggerEvent('lb-phone:itemAdded')
+                    pcall(function() return exports.npwd:setPhoneDisabled(false) end)
                 end
             end,
 
             remove = function(total)
                 if total < 1 then
-                    TriggerEvent('lb-phone:itemRemoved')
+                    pcall(function() return exports.npwd:setPhoneDisabled(true) end)
                 end
             end
         }
