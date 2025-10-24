@@ -1,28 +1,16 @@
 local hasPhone = false
 
-local function safeSetPhoneDisabled(isDisabled)
-    if GetResourceState('npwd') ~= 'started' then
-        return false
-    end
-
-    local ok = pcall(function()
-        exports.npwd:setPhoneDisabled(isDisabled)
-    end)
-
-    return ok
-end
-
 local function doPhoneCheck(isUnload, totalCount)
     hasPhone = false
 
     if isUnload then
-        safeSetPhoneDisabled(true)
+        exports.npwd:setPhoneDisabled(true)
         return
     end
 
     if totalCount then
         hasPhone = totalCount > 0
-        safeSetPhoneDisabled(not hasPhone)
+        exports.npwd:setPhoneDisabled(not hasPhone)
         return
     end
 
@@ -39,7 +27,7 @@ local function doPhoneCheck(isUnload, totalCount)
         end
     end
 
-    safeSetPhoneDisabled(not hasPhone)
+    exports.npwd:setPhoneDisabled(not hasPhone)
 end
 
 exports("HasPhone", function()
