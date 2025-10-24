@@ -2232,11 +2232,15 @@ RegisterNetEvent('qb-phone:ping:client:UiUppers', function(toggle)
         SendNUIMessage({
             action = "acceptrejectBlock",
         })
-        TriggerEvent(Config.hud .."ping:client:ShowIcon", true)
+        if Config.hud ~= '' then
+            TriggerEvent(('%sping:client:ShowIcon'):format(Config.hud), true)
+        end
     else
         SendNUIMessage({
             action = "acceptrejectNone",
         })
-        TriggerEvent(Config.hud .."ping:client:ShowIcon", false)
+        if Config.hud ~= '' then
+            TriggerEvent(('%sping:client:ShowIcon'):format(Config.hud), false)
+        end
     end
 end)

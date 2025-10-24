@@ -125,6 +125,87 @@ local function GenerateOwnerName()
 end
 
 
+local function formatJobEntry(jobName, grade)
+    if not jobName then return nil end
+    return { grade = tonumber(grade) or 0 }
+end
+
+local function getOfflineJobs(citizenid)
+    local jobs = {}
+    local rows = MySQL.query.await('SELECT `group`, grade FROM player_groups WHERE citizenid = ? AND type = ?', {
+        citizenid,
+        'job'
+    })
+
+    if rows then
+        for i = 1, #rows do
+            local row = rows[i]
+            local job = formatJobEntry(row.group, row.grade)
+            if job then
+                jobs[row.group] = job
+            end
+        end
+    end
+
+    if next(jobs) then
+        return jobs
+    end
+
+    local playerRow = MySQL.single.await('SELECT job FROM players WHERE citizenid = ?', { citizenid })
+    if playerRow and playerRow.job then
+        local jobData = json.decode(playerRow.job)
+        if jobData and jobData.name then
+            local grade = jobData.grade
+            if type(grade) == 'table' then
+                grade = grade.level or grade.grade
+            end
+            local job = formatJobEntry(jobData.name, grade)
+            if job then
+                jobs[jobData.name] = job
+            end
+        end
+    end
+
+    return jobs
+end
+
+local function getJobs(citizenid)
+    if not citizenid then return {} end
+
+    local jobs = {}
+    local player = QBCore.Functions.GetPlayerByCitizenId(citizenid)
+
+    if player then
+        if player.PlayerData.jobs then
+            for jobName, grade in pairs(player.PlayerData.jobs) do
+                local job = formatJobEntry(jobName, grade)
+                if job then
+                    jobs[jobName] = job
+                end
+            end
+        end
+
+        local primaryJob = player.PlayerData.job
+        if primaryJob and primaryJob.name and not jobs[primaryJob.name] then
+            local grade = primaryJob.grade
+            if type(grade) == 'table' then
+                grade = grade.level or grade.grade
+            end
+            local job = formatJobEntry(primaryJob.name, grade)
+            if job then
+                jobs[primaryJob.name] = job
+            end
+        end
+
+        return jobs
+    end
+
+    return getOfflineJobs(citizenid)
+end
+
+exports('getJobs', getJobs)
+
+
 local function sendNewMailToOffline(citizenid, mailData)
     local Player = QBCore.Functions.GetPlayerByCitizenId(citizenid)
     if Player then
