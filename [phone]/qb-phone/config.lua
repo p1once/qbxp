@@ -13,12 +13,12 @@ Config.serverwebhook = "MAKE_YOUR_WEBHOOK_HERE" ---enter your webhook link here 
 --config here 
 Config.corename = 'qb-core' --framework name
 Config.target = 'qb-target'
-Config.trucker = 'qb-trucker'
-Config.crypto = 'qb-crypto'
-Config.lapraces = 'qb-lapraces'
-Config.houses = 'qb-houses'
-Config.pings = 'qb-pings'
-Config.hud = "qb-hud"
+Config.trucker = 'qbx_truckerjob'
+Config.crypto = 'qb-crypto:' -- prefix for crypto callbacks
+Config.lapraces = 'qb-lapraces:' -- prefix for lapraces callbacks
+Config.houses = 'qb-houses:' -- prefix for housing callbacks
+Config.pings = 'qb-pings:' -- prefix for ping callbacks
+Config.hud = '' -- prefix for HUD events (leave blank if unsupported)
 Config.bossmenu = "qb-bossmenu"
 
 Config.Movement = false -- Allow walking and driving while using phone
