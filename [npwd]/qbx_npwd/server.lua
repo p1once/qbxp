@@ -65,10 +65,8 @@ AddEventHandler('onServerResourceStart', function(resName)
     end
 end)
 
-if Config.PhoneAsItem then
-    for i = 1, #Config.PhoneList do
-        exports.qbx_core:CreateUseableItem(Config.PhoneList[i], function(source)
-            TriggerClientEvent('qbx_npwd:client:setPhoneVisible', source, true)
-        end)
-    end
+for i = 1, #PhoneList do
+    exports.qbx_core:CreateUseableItem(PhoneList[i], function(source)
+        TriggerClientEvent('qbx_npwd:client:setPhoneVisible', source, true)
+    end)
 end

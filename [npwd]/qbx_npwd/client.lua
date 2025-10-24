@@ -1,18 +1,6 @@
-local hasPhone = not Config.PhoneAsItem
+local hasPhone = false
 
 local function doPhoneCheck(isUnload, totalCount)
-    if not Config.PhoneAsItem then
-        if isUnload then
-            hasPhone = false
-            exports.npwd:setPhoneDisabled(true)
-            return
-        end
-
-        hasPhone = true
-        exports.npwd:setPhoneDisabled(false)
-        return
-    end
-
     hasPhone = false
 
     if isUnload then
@@ -26,7 +14,7 @@ local function doPhoneCheck(isUnload, totalCount)
         return
     end
 
-    local items = exports.ox_inventory:Search('count', Config.PhoneList)
+    local items = exports.ox_inventory:Search('count', PhoneList)
 
     if type(items) == 'number' then
         hasPhone = items > 0
@@ -58,10 +46,8 @@ RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
 end)
 
 AddEventHandler('ox_inventory:itemCount', function(itemName, totalCount)
-    if not Config.PhoneAsItem then return end
-
-    for i = 1, #Config.PhoneList do
-        if Config.PhoneList[i] == itemName then
+    for i = 1, #PhoneList do
+        if PhoneList[i] == itemName then
             doPhoneCheck(false, totalCount)
             break
         end
