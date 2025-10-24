@@ -1,12 +1,12 @@
 Config = {}
-Config.Debug = true -- Set to true to enable debug mode
+Config.Debug = false -- Set to true to enable debug mode
 
 Config.DatabaseChecker = {}
 Config.DatabaseChecker.Enabled = true -- if true, the phone will check the database for any issues and fix them if possible
 Config.DatabaseChecker.AutoFix = true
 
 --[[ FRAMEWORK OPTIONS ]] --
-Config.Framework = "qb-core"
+Config.Framework = "qb"
 --[[
     Supported frameworks:
         * auto: auto-detect framework (ONLY WORKS WITH THE ONES LISTED BELOW)
@@ -25,7 +25,7 @@ Config.Item.Require = true -- require a phone item to use the phone
 Config.Item.Name = "phone" -- name of the phone item
 
 Config.Item.Unique = false -- should each phone be unique? https://docs.lbphone.com/phone/configuration#unique-phones
-Config.Item.Inventory = "qb-inventory" --[[
+Config.Item.Inventory = "ox_inventory" --[[
     The inventory you use, IGNORE IF YOU HAVE Config.Item.Unique DISABLED.
     Supported:
         * auto: auto-detect inventory (ONLY WORKS WITH THE ONE LISTED BELOW)
@@ -158,7 +158,7 @@ Config.Valet.Drive = true -- should a ped bring the car, or should it just spawn
 Config.Valet.DisableDamages = false -- disable vehicle damages (engine & body health) on esx
 Config.Valet.FixTakeOut = false -- repair the vehicle after taking it out?
 
-Config.HouseScript = "qb-houses" --[[
+Config.HouseScript = false --[[
     The housing script you use on your server
     Supported:
         * loaf_housing - https://store.loaf-scripts.com/package/4310850
@@ -169,7 +169,7 @@ Config.HouseScript = "qb-houses" --[[
 --[[ VOICE OPTIONS ]] --
 Config.Voice = {}
 Config.Voice.CallEffects = false -- enable call effects while on speaker mode? (NOTE: This may create sound-issues if you have too many submixes registered in your server)
-Config.Voice.System = "pma-voice"
+Config.Voice.System = "auto"
 --[[
     Supported voice systems:
         * pma: pma-voice - HIGHLY RECOMMENDED

@@ -577,28 +577,14 @@ RegisterNetEvent('qbx_vehicleshop:client:swapVehicle', function(data)
 end)
 
 local function confirmTrade(confirmationText)
-    local accepted
-
-    exports.npwd:createSystemNotification({
-        uniqId = "vehicleShop:confirmTrade",
+    local alert = lib.alertDialog({
+        header = locale('general.command_transfervehicle'),
         content = confirmationText,
-        secondary = "Confirm Trade",
-        keepOpen = true,
-        duration = 10000,
-        controls = true,
-        onConfirm = function()
-            accepted = true
-        end,
-        onCancel = function()
-            accepted = false
-        end,
+        centered = true,
+        cancel = true,
     })
 
-    while not accepted do
-        Wait(100)
-    end
-
-    return accepted
+    return alert == 'confirm'
 end
 
 lib.callback.register('qbx_vehicleshop:client:confirmFinance', function(financeData)
