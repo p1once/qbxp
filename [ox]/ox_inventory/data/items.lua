@@ -154,13 +154,13 @@ return {
         client = {
             add = function(total)
                 if total > 0 then
-                    TriggerEvent('qb-phone:RefreshPhone')
+                    pcall(function() return exports.npwd:setPhoneDisabled(false) end)
                 end
             end,
 
             remove = function(total)
                 if total < 1 then
-                    TriggerEvent('qb-phone:RefreshPhone')
+                    pcall(function() return exports.npwd:setPhoneDisabled(true) end)
                 end
             end
         }

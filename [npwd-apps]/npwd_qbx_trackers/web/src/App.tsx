@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { getLocale } from './locales';
@@ -20,6 +21,8 @@ type NuiListResponse = {
   status?: string;
   data?: Tracker[];
 };
+
+let cachedState: { entries: Tracker[] } | null = null;
 
 const mockTrackers: Tracker[] = [
   { plate: 'DEV123', installedAt: Math.floor(Date.now() / 1000) - 140, net: true },
@@ -200,12 +203,39 @@ const styles: Record<
   },
 };
 
+const useDelayedVisibility = (active: boolean, delay = 120) => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    let timer: number | undefined;
+
+    if (active) {
+      timer = window.setTimeout(() => setVisible(true), delay);
+    } else {
+      setVisible(false);
+    }
+
+    return () => {
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [active, delay]);
+
+  return visible;
+};
+
 const useTrackers = () => {
   const locale = useMemo(() => getLocale(), []);
   const [query, setQuery] = useState('');
-  const [entries, setEntries] = useState<Tracker[]>([]);
-  const [loading, setLoading] = useState(false);
+  const initialEntries = cachedState?.entries ?? [];
+  const hasCachedEntries = initialEntries.length > 0;
+  const [entries, setEntries] = useState<Tracker[]>(initialEntries);
+  const [loading, setLoading] = useState(() => !hasCachedEntries);
   const [error, setError] = useState<string | null>(null);
+  const [loadedOnce, setLoadedOnce] = useState(() => hasCachedEntries);
+  const [isReady, setIsReady] = useState(() => hasCachedEntries);
+  const skipNextVisibility = useRef(true);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -216,8 +246,16 @@ const useTrackers = () => {
         undefined,
         { status: 'ok', data: mockTrackers },
       );
-      const list = Array.isArray(payload) ? payload : payload?.data ?? [];
-      setEntries(list);
+      const rawList = Array.isArray(payload) ? payload : payload?.data;
+      if (!Array.isArray(rawList)) {
+        throw new Error('Invalid tracker list payload');
+      }
+      setEntries(rawList);
+      cachedState = { entries: rawList };
+      if (rawList.length > 0) {
+        setLoadedOnce(true);
+      }
+      setIsReady(true);
     } catch (err) {
       console.error('Failed to fetch tracker list', err);
       setError(locale.errorLoading);
@@ -232,8 +270,16 @@ const useTrackers = () => {
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
-      if (event.data?.action === 'npwd:visibility' && event.data.visibility) {
+      if (event.data?.action !== 'npwd:visibility') return;
+
+      if (event.data.visibility) {
+        if (skipNextVisibility.current) {
+          skipNextVisibility.current = false;
+          return;
+        }
         load();
+      } else {
+        skipNextVisibility.current = false;
       }
     };
     window.addEventListener('message', handler);
@@ -254,14 +300,35 @@ const useTrackers = () => {
     refresh: load,
     loading,
     error,
+    loadedOnce,
+    ready: isReady,
   };
 };
 
 const installedText = (template: string, relativeLabel: string) =>
   template.includes(PLACEHOLDER_TOKEN) ? template.replace(PLACEHOLDER_TOKEN, relativeLabel) : template;
 
+const useDelayedEmptyState = (shouldDisplay: boolean, delay = 220) => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!shouldDisplay) {
+      setVisible(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setVisible(true), delay);
+    return () => window.clearTimeout(timer);
+  }, [delay, shouldDisplay]);
+
+  return visible;
+};
+
 const TrackersApp = () => {
-  const { locale, query, setQuery, entries, refresh, loading, error } = useTrackers();
+  const { locale, query, setQuery, entries, refresh, loading, error, ready } = useTrackers();
+  const showLoading = useDelayedVisibility(loading);
+  const shouldShowEmpty = ready && !loading && entries.length === 0 && !error;
+  const showEmpty = useDelayedEmptyState(shouldShowEmpty);
 
   const onPing = useCallback(async (plate: string) => {
     if (!plate) return;
@@ -305,14 +372,14 @@ const TrackersApp = () => {
           {error}
         </div>
       )}
-      {loading && (
+      {showLoading && (
         <div style={styles.status} className="status">
           {locale.loading}
         </div>
       )}
 
       <div style={styles.body} className="content">
-        {!entries.length && !loading && (
+        {showEmpty && (
           <div style={styles.empty} className="empty">
             {locale.empty}
           </div>

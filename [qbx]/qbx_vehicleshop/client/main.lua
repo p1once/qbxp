@@ -576,6 +576,31 @@ RegisterNetEvent('qbx_vehicleshop:client:swapVehicle', function(data)
     end
 end)
 
+local function confirmTrade(confirmationText)
+    local accepted
+
+    exports.npwd:createSystemNotification({
+        uniqId = "vehicleShop:confirmTrade",
+        content = confirmationText,
+        secondary = "Confirm Trade",
+        keepOpen = true,
+        duration = 10000,
+        controls = true,
+        onConfirm = function()
+            accepted = true
+        end,
+        onCancel = function()
+            accepted = false
+        end,
+    })
+
+    while not accepted do
+        Wait(100)
+    end
+
+    return accepted
+end
+
 lib.callback.register('qbx_vehicleshop:client:confirmFinance', function(financeData)
     local alert = lib.alertDialog({
         header = locale('general.financed_vehicle_header'),
@@ -593,14 +618,17 @@ end)
 lib.callback.register('qbx_vehicleshop:client:confirmTrade', function(vehicle, sellAmount)
     local confirmationText = locale('general.transfervehicle_confirm', VEHICLES_HASH[vehicle].brand, VEHICLES_HASH[vehicle].name, lib.math.groupdigits(sellAmount) or 0)
 
-    local input = lib.inputDialog(confirmationText, {
-        {
-            type = 'checkbox',
-            label = 'Confirm'
-        },
-    })
+    if GetResourceState('npwd') ~= 'started' then
+        local input = lib.inputDialog(confirmationText, {
+            {
+                type = 'checkbox',
+                label = 'Confirm'
+            },
+        })
+        return input?[1]
+    end
 
-    return input and input[1] or false
+    return confirmTrade(confirmationText)
 end)
 
 --- Thread to create blips

@@ -1244,7 +1244,15 @@ RegisterNetEvent('ox_inventory:setPlayerInventory', function(currentDrops, inven
 		end
 	end
 
-        client.setPlayerData('inventory', inventory)
+	local phone = Items.phone
+
+	if phone and phone.count < 1 then
+		pcall(function()
+			return exports.npwd:setPhoneDisabled(true)
+		end)
+	end
+
+	client.setPlayerData('inventory', inventory)
 	client.setPlayerData('weight', weight)
 	currentWeapon = nil
 	Weapon.ClearAll()
