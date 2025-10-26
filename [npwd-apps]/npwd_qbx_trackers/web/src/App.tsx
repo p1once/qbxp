@@ -23,6 +23,7 @@ type NuiListResponse = {
 };
 
 let cachedState: { entries: Tracker[] } | null = null;
+const STORAGE_KEY = 'npwd_qbx_trackers_cache_v1';
 
 const mockTrackers: Tracker[] = [
   { plate: 'DEV123', installedAt: Math.floor(Date.now() / 1000) - 140, net: true },
@@ -228,7 +229,16 @@ const useDelayedVisibility = (active: boolean, delay = 120) => {
 const useTrackers = () => {
   const locale = useMemo(() => getLocale(), []);
   const [query, setQuery] = useState('');
-  const initialEntries = cachedState?.entries ?? [];
+  const initialEntries = useMemo(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) return arr as Tracker[];
+      }
+    } catch {}
+    return cachedState?.entries ?? [];
+  }, []);
   const hasCachedEntries = initialEntries.length > 0;
   const [entries, setEntries] = useState<Tracker[]>(initialEntries);
   const [loading, setLoading] = useState(() => !hasCachedEntries);
@@ -252,6 +262,9 @@ const useTrackers = () => {
       }
       setEntries(rawList);
       cachedState = { entries: rawList };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(rawList));
+      } catch {}
       if (rawList.length > 0) {
         setLoadedOnce(true);
       }

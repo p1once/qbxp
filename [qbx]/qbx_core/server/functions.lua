@@ -372,7 +372,7 @@ function IsPlayerBanned(source)
     local license2 = GetPlayerIdentifierByType(source --[[@as string]], 'license2')
     local result = license2 and storage.fetchBan({ license = license2 })
 
-    if not result then
+    if not result and license then
         result = storage.fetchBan({ license = license })
     end
 
@@ -388,7 +388,9 @@ function IsPlayerBanned(source)
                 storage.deleteBan({ license = license2 })
             end
 
-            storage.deleteBan({ license = license })
+            if license then
+                storage.deleteBan({ license = license })
+            end
         end)
     end
 

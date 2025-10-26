@@ -1,0 +1,279 @@
+﻿<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+
+    <link rel='stylesheet' href='https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap'>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css'>
+    
+    <link rel='stylesheet' href='style.css'>
+</head>
+<body>
+    <div id='app' data-app>
+        <div id='tablet' v-show='opened'> 
+            <div class='tablet-container'>
+                <div class='page' id='main' v-if='currentPage == "main"'>
+                    <div class='misc'>
+                        <div class='widget'>
+                            <p>{{ Calendar.day }}</p>
+                            <h1>{{ Calendar.date }}</h1>
+                            <h2>No more events today</h2>
+                        </div>
+                        <div class='crypto'>
+                            <h1>Raccourcis</h1>
+                            <p>Actions fréquentes</p>
+                            <div class='list'>
+                                <div class='currency'>
+                                    <h1>Créer un bien</h1>
+                                    <button class='primary' @click='createProperty()'><i class='fas fa-plus' style='margin-right:6px;'></i>Créer un bien</button>
+                                </div>
+                                
+                                <div class='currency'>
+                                    <h1>Rechercher par nom</h1>
+                                    <select v-model='NameList.selected'>
+                                        <option value='' disabled>Choisir un bien</option>
+                                        <option v-for='opt in NameList.items' :key='opt.id' :value='opt.id'>{{ opt.name }}</option>
+                                    </select>
+                                    <button @click='openBySelectedName()'><i class='fas fa-search' style='margin-right:6px;'></i>Ouvrir</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class='apps'>
+                        <div class='application' v-for='app in Applications' @click='switchPage(app.href)'>
+                            <div class='content' v-bind:id='app.href'>
+                                <img v-bind:src='app.icon' />
+                            </div>
+                            <h1>{{ app.name }}</h1>
+                        </div>
+                    </div>
+                </div>
+
+                
+                
+                <div class='page' id='properties' v-if='currentPage == "properties"'>
+                    <div class='content'>
+                        <h1>Biens</h1>
+                        <div class='toolbar'>
+    <input class='input' v-model='Filters.query' placeholder='Nom contient' />
+    <select class='select' v-model='Filters.status'>
+        <option value='all'>Tous</option>
+        <option value='unowned'>Disponibles</option>
+        <option value='owned'>Occupés</option>
+    </select>
+    <select class='select' v-model='Filters.sort'>
+        <option value='id'>ID</option>
+        <option value='name'>Nom</option>
+        <option value='price'>Prix</option>
+        <option value='rent_interval'>Loyer (h)</option>
+    </select>
+    <select class='select' v-model='Filters.order'>
+        <option value='ASC'>Asc</option>
+        <option value='DESC'>Desc</option>
+    </select>
+    <input class='input' v-model='Filters.minPrice' placeholder='Prix min' />
+    <input class='input' v-model='Filters.maxPrice' placeholder='Prix max' />
+    <button class='btn secondary' @click='refreshList(true)'>Rechercher</button>
+</div>
+<div class='card mt-2'>
+                            <table class='table'>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th><th>Nom</th><th>Prix</th><th>Loyer</th><th>Statut</th><th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for='it in List.items' :key='it.id'>
+                                        <td>#{{it.id}}</td>
+                                        <td>{{it.property_name}}</td>
+                                        <td>${{it.price}}</td>
+                                        <td>{{it.rent_interval ? it.rent_interval+'h' : '-'}}
+                                        </td>
+                                        <td><span class='chip' :class="it.owner ? 'owned' : 'free'">{{ it.owner ? 'Occupé' : 'Libre' }}</span></td>
+                                        <td>
+                                            <button class='btn secondary' @click="Selected = it; UpdateForm.id = it.id; UpdateForm.name = it.property_name; UpdateForm.price = it.price; UpdateForm.rent_interval = it.rent_interval || ''; TransferForm.id = it.id;">Gérer</button>
+                                        </td>
+</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+<div class='empty' v-if='List.items.length===0'>Aucun bien ne correspond aux filtres.</div>
+                            <div class='pagination'>
+                                <button class='btn secondary' :disabled='List.offset<=0' @click='List.offset=Math.max(0,List.offset-List.limit); refreshList()'>PrÃ©c.</button>
+                                <span>{{List.offset+1}} - {{Math.min(List.offset+List.limit, List.total)}} / {{List.total}}</span>
+                                <button class='btn secondary' :disabled='List.offset+List.limit>=List.total' @click='List.offset=List.offset+List.limit; refreshList()'>Suiv.</button>
+                            </div>
+                        </div>
+                        <div v-if='Selected' class='card mt-3 manage-card'>
+                            <button class='icon-btn close' @click='closeManage()' title='Fermer'>
+                                <i class='fas fa-times'></i>
+                            </button>
+                            <h2>GÃ©rer #{{Selected.id}} - {{Selected.property_name}}</h2>
+                            <div class='group'>
+                                <h3>Ã‰dition</h3>
+                                <div class='form'>
+                                    <div class='field'>
+                                        <label>Nom</label>
+                                        <input class='input' v-model='UpdateForm.name' placeholder='Nom du bien' />
+                                    </div>
+                                    <div class='field'>
+                                        <label>Prix ($)</label>
+                                        <input class='input' v-model='UpdateForm.price' placeholder='Ex: 250000' />
+                                    </div>
+                                    <div class='field'>
+                                        <label>Loyer (heures)</label>
+                                        <input class='input' v-model='UpdateForm.rent_interval' placeholder='Vide = achat, 1â€“720' />
+                                    </div>
+                                </div>
+                                <div class='row mt-2'>
+                                    <button class='btn' @click='updateProperty()'>Enregistrer</button>
+                                    <button class='btn secondary' @click='setGarageHere()'>Garage ici</button>
+                                </div>
+                            </div>
+                            <div class='group mt-2'>
+                                <h3>Transfert de titre</h3>
+                                <div class='form'>
+                                    <div class='field'>
+                                        <label>ID bien</label>
+                                        <input class='input' v-model='TransferForm.id' :value='Selected.id' placeholder='ID' />
+                                    </div>
+                                    <div class='field'>
+                                        <label>CitizenID cible</label>
+                                        <input class='input' v-model='TransferForm.target' placeholder='CitizenID' />
+                                    </div>
+                                </div>
+                                <div class='row mt-2'>
+                                    <button class='btn secondary' @click='transferTitle()'>TransfÃ©rer le titre</button>
+                                </div>
+                            </div>
+                            <div class='danger-zone'>
+                                <div class='row mt-2'>
+                                    <button class='btn danger' @click='deleteSelected()'>Supprimer le bien</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class='page' id='operations' v-if='currentPage == "operations"'>
+                    <div class='content'>
+                        <h1>OpÃ©rations</h1>
+                        <div class='row mt-2'>
+                            <button class='btn' @click='createProperty()'>CrÃ©er un bien</button>
+                            <select class='select' v-model='SearchId'>
+                                <option value='' disabled>Choisir un bien</option>
+                                <option v-for='opt in NameList.items' :key='opt.id' :value='opt.id'>{{ opt.name }} (#{{opt.id}})</option>
+                            </select>
+                            <button class='btn secondary' @click='openById()'>Ouvrir</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class='page' id='contracts' v-if='currentPage == "contracts"'>
+                    <div class='content'>
+                        <h1>Contrats</h1>
+
+                        <div class='section-card'>
+                            <div class='section-header'>
+                                <i class='fas fa-file-signature'></i>
+                                <div>
+                                    <h3>CrÃ©er un contrat</h3>
+                                    <p class='hint'>SÃ©lectionne un bien puis le client cible (CitizenID).</p>
+                                </div>
+                                <div class='pill' v-if='Contract.id'>{{ nameOf(Contract.id) }}</div>
+                            </div>
+                            <div class='section-body'>
+                                <div class='field'>
+                                    <label>Bien</label>
+                                    <select class='select' v-model='Contract.id'>
+                                        <option value='' disabled>Choisir un bien</option>
+                                        <option v-for='opt in NameList.items' :key='opt.id' :value='opt.id'>{{ opt.name }} (#{{opt.id}})</option>
+                                    </select>
+                                </div>
+                                <div class='field'>
+                                    <label>CitizenID client</label>
+                                    <input class='input' v-model='Contract.target' placeholder='CitizenID client' />
+                                </div>
+                                <div class='actions'>
+                                    <button class='btn' @click='rentTo()'><i class='fas fa-file-contract' style='margin-right:6px;'></i>Louer au client</button>
+                                    <button class='btn secondary' @click='buyTo()'><i class='fas fa-handshake' style='margin-right:6px;'></i>Vendre au client</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class='section-card warn'>
+                            <div class='section-header'>
+                                <i class='fas fa-user-slash'></i>
+                                <div>
+                                    <h3>Gestion occupant</h3>
+                                    <p class='hint'>Ã‰vincer l'occupant actuel d'un bien (action sensible).</p>
+                                </div>
+                                <div class='pill' v-if='EvictId'>{{ nameOf(EvictId) }}</div>
+                            </div>
+                            <div class='section-body'>
+                                <div class='field'>
+                                    <label>Bien</label>
+                                    <select class='select' v-model='EvictId'>
+                                        <option value='' disabled>Choisir un bien</option>
+                                        <option v-for='opt in NameList.items' :key='opt.id' :value='opt.id'>{{ opt.name }} (#{{opt.id}})</option>
+                                    </select>
+                                </div>
+                                <div class='actions'>
+                                    <button class='btn danger' @click='evict()'><i class='fas fa-exclamation-triangle' style='margin-right:6px;'></i>Ã‰vincer l'occupant</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class='section-card'>
+                            <div class='section-header'>
+                                <i class='fas fa-door-open'></i>
+                                <div>
+                                    <h3>Visite guidÃ©e</h3>
+                                    <p class='hint'>DÃ©marre une visite du bien avec un client.</p>
+                                </div>
+                                <div class='pill' v-if='Visit.id'>{{ nameOf(Visit.id) }}</div>
+                            </div>
+                            <div class='section-body'>
+                                <div class='field'>
+                                    <label>Bien</label>
+                                    <select class='select' v-model='Visit.id'>
+                                        <option value='' disabled>Choisir un bien</option>
+                                        <option v-for='opt in NameList.items' :key='opt.id' :value='opt.id'>{{ opt.name }} (#{{opt.id}})</option>
+                                    </select>
+                                </div>
+                                <div class='field'>
+                                    <label>CitizenID client (optionnel)</label>
+                                    <input class='input' v-model='Visit.target' placeholder='CitizenID client (optionnel)' />
+                                </div>
+                                <div class='actions'>
+                                    <button class='btn secondary' @click='startVisit()'><i class='fas fa-play' style='margin-right:6px;'></i>DÃ©marrer une visite</button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class='tablet-footer'>
+                <div class='line' v-on:click='switchPage("main")'></div>
+            </div>
+        </div>
+    </div>
+
+    <script src='https://unpkg.com/vue@2.6.14'></script>
+    <script src='index.js'></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

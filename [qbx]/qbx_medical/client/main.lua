@@ -150,6 +150,9 @@ local function resetMinorInjuries()
     MakePedLimp()
     doLimbAlert()
 end
+ 
+-- Export to allow other resources (e.g., qbx_ambulancejob) to reset minor injuries
+exports('ResetMinorInjuries', resetMinorInjuries)
 
 local function resetAllInjuries()
     for bodyPartKey in pairs(sharedConfig.bodyParts) do

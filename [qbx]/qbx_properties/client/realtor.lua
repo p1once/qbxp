@@ -1,7 +1,10 @@
 local sharedConfig = require 'config.shared'
 local values = {}
+-- Build menu values, filtering out numeric shell keys that aren't valid models
 for k in pairs(sharedConfig.interiors) do
-    values[#values + 1] = k
+    if type(k) ~= 'number' or IsModelInCdimage(k) or IsModelValid(k) then
+        values[#values + 1] = k
+    end
 end
 
 local car = 0
@@ -25,6 +28,11 @@ end
 local function previewProperty(propertyIndex)
     if DoesEntityExist(shell) then DeleteEntity(shell) end
     if type(propertyIndex) == 'number' then
+        -- Guard against missing/invalid shell models
+        if not (IsModelInCdimage(propertyIndex) or IsModelValid(propertyIndex)) then
+            lib.notify({ type = 'error', title = 'Missing shell model', description = 'The selected interior shell model is not installed.' })
+            return
+        end
         lib.requestModel(propertyIndex, 5000)
         shell = CreateObject(propertyIndex, playerCoords.x, playerCoords.y, playerCoords.z - sharedConfig.shellUndergroundOffset, false, false, false)
         FreezeEntityPosition(shell, true)

@@ -139,13 +139,29 @@ end)
 
 -- NetEvent to handle player exiting house
 RegisterNetEvent('qbx_houserobbery:server:leaveHouse', function()
-    local playerCoords = GetEntityCoords(GetPlayerPed(source --[[@as number]]))
-    local index = GetResourceKvpInt(exports.qbx_core:GetPlayer(source).PlayerData.citizenid)
-    local exit = vec3(sharedConfig.interiors[sharedConfig.houses[index].interior].exit.x, sharedConfig.interiors[sharedConfig.houses[index].interior].exit.y, sharedConfig.interiors[sharedConfig.houses[index].interior].exit.z)
+    local src = source --[[@as number]]
+    local ped = GetPlayerPed(src)
+    if not ped or ped == 0 then return end
 
-    if #(playerCoords - exit) > 3 then return end
+    local playerCoords = GetEntityCoords(ped)
+    local player = exports.qbx_core:GetPlayer(src)
+    if not player or not player.PlayerData or not player.PlayerData.citizenid then return end
 
-    leaveHouse(source --[[@as number]], sharedConfig.houses[index].coords)
+    local index = GetResourceKvpInt(player.PlayerData.citizenid)
+    if not index or index == 0 then return end
+
+    local house = sharedConfig.houses[index]
+    if not house then return end
+
+    local interior = sharedConfig.interiors[house.interior]
+    if not interior or not interior.exit then return end
+
+    local exit = interior.exit
+    local exitVec3 = vec3(exit.x, exit.y, exit.z)
+
+    if #(playerCoords - exitVec3) > 3 then return end
+
+    leaveHouse(src, house.coords)
 end)
 
 -- Callback to check if loot is busy/already looted

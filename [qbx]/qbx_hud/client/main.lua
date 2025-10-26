@@ -26,6 +26,7 @@ local showSquareB = false
 local CinematicHeight = 0.2
 local w = 0
 local hasWeapon = false
+local hudOverlayBlocked = false
 
 DisplayRadar(false)
 
@@ -943,7 +944,11 @@ end
 
 CreateThread(function()
     while true do
-        if w > 0 then
+        local skipForNui = false
+        if IsNuiFocused ~= nil then
+            skipForNui = IsNuiFocused()
+        end
+        if w > 0 and not hudOverlayBlocked and not skipForNui then
             blackBars()
             DisplayRadar(false)
             SendNUIMessage({
@@ -957,6 +962,12 @@ CreateThread(function()
         end
         Wait(0)
     end
+end)
+
+-- Allow other resources to temporarily block cinematic black bars (e.g., when displaying custom UI)
+RegisterNetEvent('qbx_hud:client:blockCinematic', function(on)
+    hudOverlayBlocked = on and true or false
+    print(('^5[qbx_hud] blockCinematic => %s^7'):format(tostring(hudOverlayBlocked)))
 end)
 
 -- Compass

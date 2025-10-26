@@ -299,41 +299,7 @@ local function singlePropertyMenu(property, noBackMenu)
             args = { id = property.id }
         }
     elseif property.owner == nil then
-        if property.rent_interval then
-            options[#options + 1] = {
-                title = 'Rent',
-                icon = 'dollar-sign',
-                arrow = true,
-                onSelect = function()
-                    local alert = lib.alertDialog({
-                        header = string.format('Renting - %s', property.property_name),
-                        content = string.format('Are you sure you want to rent %s for $%s which will be billed every %sh(s)?', property.property_name, property.price, property.rent_interval),
-                        centered = true,
-                        cancel = true
-                    })
-                    if alert == 'confirm' then
-                        TriggerServerEvent('qbx_properties:server:rentProperty', property.id)
-                    end
-                end,
-            }
-        else
-            options[#options + 1] = {
-                title = 'Buy',
-                icon = 'dollar-sign',
-                arrow = true,
-                onSelect = function()
-                    local alert = lib.alertDialog({
-                        header = string.format('Buying - %s', property.property_name),
-                        content = string.format('Are you sure you want to buy %s for $%s?', property.property_name, property.price),
-                        centered = true,
-                        cancel = true
-                    })
-                    if alert == 'confirm' then
-                        TriggerServerEvent('qbx_properties:server:buyProperty', property.id)
-                    end
-                end,
-            }
-        end
+        -- local Rent/Buy disabled: visits are guided by realtor
     else
         options[#options + 1] = {
             title = locale('menu.ring_doorbell'),
@@ -449,4 +415,17 @@ end)
 RegisterNetEvent('qbx_properties:client:addProperty', function(propertyCoords)
     if lib.table.contains(properties, propertyCoords) then return end
     properties[#properties + 1] = propertyCoords
+end)
+
+-- Remove a property marker from world list (used on deletion)
+RegisterNetEvent('qbx_properties:client:removeProperty', function(propertyCoords)
+    if not propertyCoords then return end
+    local function same(a, b)
+        return math.abs(a.x - b.x) < 0.01 and math.abs(a.y - b.y) < 0.01 and math.abs(a.z - b.z) < 0.01
+    end
+    local idx = nil
+    for i = 1, #properties do
+        if same(properties[i], propertyCoords) then idx = i break end
+    end
+    if idx then table.remove(properties, idx) end
 end)

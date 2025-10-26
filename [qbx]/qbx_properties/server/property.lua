@@ -116,6 +116,11 @@ RegisterNetEvent('qbx_properties:server:exitProperty', function()
     exitProperty(source --[[@as number]])
 end)
 
+-- Release property: remove owner (used on contract termination)
+RegisterNetEvent('qbx_properties:server:releaseProperty', function(propertyId)
+    MySQL.update('UPDATE properties SET owner = ? WHERE id = ?', {nil, propertyId})
+end)
+
 AddEventHandler('QBCore:Server:OnPlayerUnload', function(source)
     exitProperty(source, true)
 end)
@@ -154,6 +159,90 @@ RegisterNetEvent('qbx_properties:server:enterProperty', function(data)
     if not hasAccess(player.PlayerData.citizenid, propertyId) then return end
 
     EnterProperty(playerSource, propertyId, data.isSpawn)
+end)
+
+-- Visit-only entry (no stash or management interactions)
+local function EnterPropertyVisit(playerSource, id)
+    local property = MySQL.single.await('SELECT * FROM properties WHERE id = ?', {id})
+    if not property then return end
+    local propertyCoords = json.decode(property.coords)
+    propertyCoords = vec3(propertyCoords.x, propertyCoords.y, propertyCoords.z)
+
+    local interactions = {}
+    local isInteriorShell = tonumber(property.interior) ~= nil
+
+    if isInteriorShell then
+        TriggerClientEvent('qbx_properties:client:createInterior', playerSource, tonumber(property.interior), vec3(propertyCoords.x, propertyCoords.y, propertyCoords.z - sharedConfig.shellUndergroundOffset))
+    end
+
+    -- Only exit interaction during visit
+    local interactData = json.decode(property.interact_options)
+    for i = 1, #interactData do
+        if interactData[i].type == 'exit' then
+            local coords = isInteriorShell and CalculateOffsetCoords(propertyCoords, interactData[i].coords) or interactData[i].coords
+            interactions[#interactions + 1] = {
+                type = 'exit',
+                coords = vec3(coords.x, coords.y, coords.z)
+            }
+            SetEntityCoords(GetPlayerPed(playerSource), coords.x, coords.y, coords.z, false, false, false, false)
+            SetEntityHeading(GetPlayerPed(playerSource), coords.w)
+            break
+        end
+    end
+
+    enteredProperty[playerSource] = id
+    insideProperty[id] = insideProperty[id] or {}
+    insideProperty[id][#insideProperty[id] + 1] = playerSource
+    lib.triggerClientEvent('qbx_properties:client:concealPlayers', insideProperty[id], insideProperty[id])
+
+    TriggerClientEvent('qbx_properties:client:updateInteractions', playerSource, interactions, property.interior, false)
+end
+
+-- Start a guided visit: realtor + target citizenid (online)
+RegisterNetEvent('qbx_properties:server:startVisit', function(propertyId, targetCid)
+    local src = source --[[@as number]]
+    local agent = exports.qbx_core:GetPlayer(src)
+    if not agent or not agent.PlayerData or not agent.PlayerData.job then return end
+    local jobName = GetConvar('realestate_tablet:job', 'realestate')
+    if agent.PlayerData.job.name ~= jobName then return end
+
+    local target = targetCid and exports.qbx_core:GetPlayerByCitizenId(targetCid) or nil
+    -- Start visit for agent
+    EnterPropertyVisit(src, propertyId)
+    -- And for client if online
+    if target and target.PlayerData and target.PlayerData.source then
+        EnterPropertyVisit(target.PlayerData.source, propertyId)
+    end
+end)
+
+-- Evict current occupant: allowed for realtor and landlord
+RegisterNetEvent('qbx_properties:server:evict', function(propertyId)
+    local src = source --[[@as number]]
+    local player = exports.qbx_core:GetPlayer(src)
+    if not player or not player.PlayerData then return end
+    local jobName = GetConvar('realestate_tablet:job', 'realestate')
+    local prop = MySQL.single.await('SELECT owner, landlord_cid, property_name FROM properties WHERE id = ?', {propertyId})
+    if not prop then return end
+
+    local isRealtor = player.PlayerData.job and player.PlayerData.job.name == jobName
+    local isLandlord = prop.landlord_cid ~= nil and player.PlayerData.citizenid == prop.landlord_cid
+    if not isRealtor and not isLandlord then return end
+
+    -- Exit everyone inside
+    if insideProperty[propertyId] then
+        for _ = 1, #insideProperty[propertyId] do
+            exitProperty(insideProperty[propertyId][1])
+        end
+    end
+
+    -- Assign owner back to landlord or free if none
+    if prop.landlord_cid then
+        MySQL.update.await('UPDATE properties SET owner = ? WHERE id = ?', {prop.landlord_cid, propertyId})
+    else
+        MySQL.update.await('UPDATE properties SET owner = ?, keyholders = JSON_OBJECT() WHERE id = ?', {nil, propertyId})
+    end
+
+    exports.qbx_core:Notify(src, string.format('Occupation terminée pour %s', prop.property_name), 'success')
 end)
 
 RegisterNetEvent('qbx_properties:server:ringProperty', function(data)
@@ -404,10 +493,175 @@ local function registerGarages()
     end
 end
 
+-- Public: register a garage for a property owner (used by contracts)
+RegisterNetEvent('qbx_properties:server:registerGarage', function(name, ownerCid, keyholders, garage)
+    registerGarage(name, ownerCid, keyholders, garage)
+end)
+
+-- Allow controlled remote rent (agents renting to a target citizenid)
+local allowRemoteRent = GetConvar('qbx_properties:allowRemoteRent', 'false') == 'true'
+local allowRemoteBuy = GetConvar('qbx_properties:allowRemoteBuy', 'false') == 'true'
+local enableOnSiteRent = GetConvar('qbx_properties:enableOnSiteRent', 'false') == 'true'
+local enableOnSiteBuy = GetConvar('qbx_properties:enableOnSiteBuy', 'false') == 'true'
+local function _realtorJobName()
+    return GetConvar('realestate_tablet:job', 'realestate')
+end
+
+RegisterNetEvent('qbx_properties:server:rentPropertyTo', function(propertyId, targetCid)
+    if not allowRemoteRent then return end
+    local src = source --[[@as number]]
+    local agent = exports.qbx_core:GetPlayer(src)
+    if not agent or not agent.PlayerData or not agent.PlayerData.job or agent.PlayerData.job.name ~= _realtorJobName() then return end
+
+    local property = MySQL.single.await('SELECT owner, price, property_name, coords, rent_interval, keyholders, garage, landlord_cid FROM properties WHERE id = ?', {propertyId})
+    if not property then return end
+    if property.owner then return end
+    if not property.rent_interval then return end
+
+    local tenant = exports.qbx_core:GetPlayerByCitizenId(targetCid)
+    if not tenant or not tenant.PlayerData then
+        exports.qbx_core:Notify(src, 'Cible introuvable.', 'error')
+        return
+    end
+
+    -- First payment required immediately: try Renewed-Banking first, then fallback to bank removal
+    local RB = exports['Renewed-Banking']
+    local paid = false
+    if RB and RB.removeAccountMoney then
+        paid = RB.removeAccountMoney(targetCid, property.price) == true or RB.removeAccountMoney(targetCid, property.price) == 1
+    end
+    if not paid then
+        paid = tenant.Functions.RemoveMoney('bank', property.price, string.format('First rent for %s', property.property_name))
+        if not paid then
+            exports.qbx_core:Notify(src, 'Le client n\'a pas assez d\'argent en banque pour louer.', 'error')
+            return
+        end
+    end
+
+    if property.garage then
+        registerGarage(property.property_name, targetCid, json.decode(property.keyholders), json.decode(property.garage))
+    end
+
+    MySQL.update('UPDATE properties SET owner = ? WHERE id = ?', {targetCid, propertyId})
+    -- credit landlord for first rent payment if applicable
+    if property.landlord_cid ~= nil then
+        local RB2 = exports['Renewed-Banking']
+        local credited = false
+        if RB2 and RB2.addAccountMoney then
+            credited = RB2.addAccountMoney(property.landlord_cid, property.price) == true or RB2.addAccountMoney(property.landlord_cid, property.price) == 1
+        end
+        if not credited then
+            local landlordPlayer = exports.qbx_core:GetPlayerByCitizenId(property.landlord_cid)
+            if landlordPlayer then
+                landlordPlayer.Functions.AddMoney('bank', property.price, string.format('First rent income for %s', property.property_name))
+            else
+                local offline = exports.qbx_core:GetOfflinePlayer(property.landlord_cid)
+                if offline then
+                    offline.PlayerData.money.bank = (offline.PlayerData.money.bank or 0) + property.price
+                    exports.qbx_core:SaveOffline(offline.PlayerData)
+                end
+            end
+        end
+    end
+    -- create contract in realestate tablet for recurring billing
+    TriggerEvent('realestate:server:createRentContract', {
+        property_id = propertyId,
+        property_name = property.property_name,
+        agent_cid = agent.PlayerData.citizenid,
+        client_cid = targetCid,
+        price = property.price,
+        interval_hours = property.rent_interval,
+        landlord_cid = property.landlord_cid,
+        autopay = true
+    })
+    exports.qbx_core:Notify(src, string.format('Location démarrée pour %s', property.property_name), 'success')
+    local externalBilling = GetConvar('qbx_properties:externalRentBilling', 'false') == 'true'
+    if not externalBilling then
+        startRentThread(propertyId)
+    end
+
+    local tenantPlayer = exports.qbx_core:GetPlayerByCitizenId(targetCid)
+    if tenantPlayer then
+        exports.qbx_core:Notify(tenantPlayer.PlayerData.source, string.format('Vous louez désormais %s', property.property_name), 'success')
+    end
+
+    logger.log({
+        source = src,
+        event = 'qbx_properties:server:rentPropertyTo',
+        message = locale('logs.rent_property', targetCid, propertyId),
+        webhook = config.discordWebhook
+    })
+end)
+
+RegisterNetEvent('qbx_properties:server:buyPropertyTo', function(propertyId, targetCid)
+    if not allowRemoteBuy then return end
+    local src = source --[[@as number]]
+    local agent = exports.qbx_core:GetPlayer(src)
+    if not agent or not agent.PlayerData or not agent.PlayerData.job or agent.PlayerData.job.name ~= _realtorJobName() then return end
+
+    local property = MySQL.single.await('SELECT owner, price, property_name, keyholders, garage, rent_interval, landlord_cid FROM properties WHERE id = ?', {propertyId})
+    if not property or property.owner then return end
+    if property.rent_interval then return end -- not purchasable when rentable flag is set
+
+    local buyer = exports.qbx_core:GetPlayerByCitizenId(targetCid)
+    if not buyer or not buyer.PlayerData then
+        exports.qbx_core:Notify(src, 'Cible introuvable.', 'error')
+        return
+    end
+
+    -- Debit bank only (no cash) from buyer
+    local removed = false
+    removed = buyer.Functions.RemoveMoney('bank', property.price, string.format('Purchased %s (remote)', property.property_name))
+    if not removed then
+        exports.qbx_core:Notify(src, 'Le client n\'a pas assez d\'argent en banque pour acheter.', 'error')
+        return
+    end
+
+    local previousLandlord = property.landlord_cid
+    -- set title and occupant to buyer
+    MySQL.update('UPDATE properties SET landlord_cid = ?, owner = ? WHERE id = ?', {targetCid, targetCid, propertyId})
+    if property.garage then
+        registerGarage(property.property_name, targetCid, json.decode(property.keyholders), json.decode(property.garage))
+    end
+
+    -- credit previous landlord if exists
+    if previousLandlord then
+        local RB3 = exports['Renewed-Banking']
+        local credited = false
+        if RB3 and RB3.addAccountMoney then
+            credited = RB3.addAccountMoney(previousLandlord, property.price) == true or RB3.addAccountMoney(previousLandlord, property.price) == 1
+        end
+        if not credited then
+            local seller = exports.qbx_core:GetPlayerByCitizenId(previousLandlord)
+            if seller then
+                seller.Functions.AddMoney('bank', property.price, string.format('Sale of %s', property.property_name))
+            else
+                local offline = exports.qbx_core:GetOfflinePlayer(previousLandlord)
+                if offline then
+                    offline.PlayerData.money.bank = (offline.PlayerData.money.bank or 0) + property.price
+                    exports.qbx_core:SaveOffline(offline.PlayerData)
+                end
+            end
+        end
+    end
+    exports.qbx_core:Notify(src, string.format('Achat attribué pour %s', property.property_name), 'success')
+    local buyerPlayer = exports.qbx_core:GetPlayerByCitizenId(targetCid)
+    if buyerPlayer then
+        exports.qbx_core:Notify(buyerPlayer.PlayerData.source, string.format('Vous avez acheté %s', property.property_name), 'success')
+    end
+
+    logger.log({
+        source = src,
+        event = 'qbx_properties:server:buyPropertyTo',
+        message = locale('logs.purchase_property', targetCid, propertyId),
+        webhook = config.discordWebhook
+    })
+end)
+
 local function startRentThread(propertyId)
     CreateThread(function()
         while true do
-            local property = MySQL.single.await('SELECT owner, price, rent_interval, property_name FROM properties WHERE id = ?', {propertyId})
+            local property = MySQL.single.await('SELECT owner, price, rent_interval, property_name, landlord_cid FROM properties WHERE id = ?', {propertyId})
             if not property or not property.owner then break end
 
             local player = exports.qbx_core:GetPlayerByCitizenId(property.owner) or exports.qbx_core:GetOfflinePlayer(property.owner)
@@ -424,10 +678,37 @@ local function startRentThread(propertyId)
                 end
             end
 
+            -- credit landlord for this period if applicable
+            if property.landlord_cid ~= nil then
+                local RB = exports['Renewed-Banking']
+                local credited = false
+                if RB and RB.addAccountMoney then
+                    credited = RB.addAccountMoney(property.landlord_cid, property.price) == true or RB.addAccountMoney(property.landlord_cid, property.price) == 1
+                end
+                if not credited then
+                    local landlord = exports.qbx_core:GetPlayerByCitizenId(property.landlord_cid)
+                    if landlord then
+                        landlord.Functions.AddMoney('bank', property.price, string.format('Rent income for %s', property.property_name))
+                    else
+                        local offline = exports.qbx_core:GetOfflinePlayer(property.landlord_cid)
+                        if offline then
+                            offline.PlayerData.money.bank = (offline.PlayerData.money.bank or 0) + property.price
+                            exports.qbx_core:SaveOffline(offline.PlayerData)
+                        end
+                    end
+                end
+            end
+
             Wait(property.rent_interval * 3600000)
         end
 
-        MySQL.update('UPDATE properties SET owner = ? WHERE id = ?', {nil, propertyId})
+        -- when rent stops (due to default or other), return occupancy to landlord if any, otherwise free property
+        local prop = MySQL.single.await('SELECT landlord_cid FROM properties WHERE id = ?', {propertyId})
+        if prop and prop.landlord_cid then
+            MySQL.update('UPDATE properties SET owner = ? WHERE id = ?', {prop.landlord_cid, propertyId})
+        else
+            MySQL.update('UPDATE properties SET owner = ? WHERE id = ?', {nil, propertyId})
+        end
     end)
 end
 
@@ -435,13 +716,14 @@ RegisterNetEvent('qbx_properties:server:rentProperty', function(propertyId)
     local playerSource = source --[[@as number]]
     local player = exports.qbx_core:GetPlayer(playerSource)
     local playerCoords = GetEntityCoords(GetPlayerPed(playerSource))
-    local property = MySQL.single.await('SELECT owner, price, property_name, coords, rent_interval, keyholders, garage FROM properties WHERE id = ?', {propertyId})
+    local property = MySQL.single.await('SELECT owner, price, property_name, coords, rent_interval, keyholders, garage, landlord_cid FROM properties WHERE id = ?', {propertyId})
     local propertyCoords = json.decode(property.coords)
     if #(playerCoords - vec3(propertyCoords.x, propertyCoords.y, propertyCoords.z)) > 8.0 then return end
+    if not enableOnSiteRent then return end
     if property.owner then return end
     if not property.rent_interval then return end
 
-    if player.PlayerData.money.bank < property.price then
+    if not player.Functions.RemoveMoney('bank', property.price, string.format('First rent for %s', property.property_name)) then
         exports.qbx_core:Notify(playerSource, 'Not enough money to rent property.', 'error')
         return
     end
@@ -452,7 +734,30 @@ RegisterNetEvent('qbx_properties:server:rentProperty', function(propertyId)
 
     exports.qbx_core:Notify(playerSource, string.format('Successfully started renting %s', property.property_name), 'success')
     MySQL.update('UPDATE properties SET owner = ? WHERE id = ?', {player.PlayerData.citizenid, propertyId})
-    startRentThread()
+    -- credit landlord for first payment
+    if property.landlord_cid ~= nil then
+        local RB4 = exports['Renewed-Banking']
+        local credited = false
+        if RB4 and RB4.addAccountMoney then
+            credited = RB4.addAccountMoney(property.landlord_cid, property.price) == true or RB4.addAccountMoney(property.landlord_cid, property.price) == 1
+        end
+        if not credited then
+            local landlord = exports.qbx_core:GetPlayerByCitizenId(property.landlord_cid)
+            if landlord then
+                landlord.Functions.AddMoney('bank', property.price, string.format('First rent income for %s', property.property_name))
+            else
+                local offline = exports.qbx_core:GetOfflinePlayer(property.landlord_cid)
+                if offline then
+                    offline.PlayerData.money.bank = (offline.PlayerData.money.bank or 0) + property.price
+                    exports.qbx_core:SaveOffline(offline.PlayerData)
+                end
+            end
+        end
+    end
+    local externalBilling = GetConvar('qbx_properties:externalRentBilling', 'false') == 'true'
+    if not externalBilling then
+        startRentThread(propertyId)
+    end
 
     logger.log({
         source = playerSource,
@@ -466,10 +771,12 @@ RegisterNetEvent('qbx_properties:server:buyProperty', function(propertyId)
     local playerSource = source --[[@as number]]
     local player = exports.qbx_core:GetPlayer(playerSource)
     local playerCoords = GetEntityCoords(GetPlayerPed(playerSource))
-    local property = MySQL.single.await('SELECT owner, price, property_name, coords, keyholders, garage FROM properties WHERE id = ?', {propertyId})
+    local property = MySQL.single.await('SELECT owner, price, property_name, coords, keyholders, garage, rent_interval FROM properties WHERE id = ?', {propertyId})
     local propertyCoords = json.decode(property.coords)
 
     if #(playerCoords - vec3(propertyCoords.x, propertyCoords.y, propertyCoords.z)) > 8.0 or property.owner then return end
+    if not enableOnSiteBuy then return end
+    if property.rent_interval then return end
 
     if not player.Functions.RemoveMoney('cash', property.price, string.format('Purchased %s', property.property_name)) and not player.Functions.RemoveMoney('bank', property.price, string.format('Purchased %s', property.property_name)) then
         exports.qbx_core:Notify(playerSource, 'Not enough money to purchase property.', 'error')
@@ -480,7 +787,7 @@ RegisterNetEvent('qbx_properties:server:buyProperty', function(propertyId)
         registerGarage(property.property_name, player.PlayerData.citizenid, json.decode(property.keyholders), json.decode(property.garage))
     end
 
-    MySQL.update('UPDATE properties SET owner = ? WHERE id = ?', {player.PlayerData.citizenid, propertyId})
+    MySQL.update('UPDATE properties SET landlord_cid = ?, owner = ? WHERE id = ?', {player.PlayerData.citizenid, player.PlayerData.citizenid, propertyId})
     exports.qbx_core:Notify(playerSource, string.format('Successfully purchased %s for $%s', property.property_name, property.price))
 
     logger.log({
@@ -499,6 +806,38 @@ Citizen.CreateThreadNow(function()
     MySQL.query.await(sql1)
     MySQL.query.await(sql2)
     MySQL.query.await(sql3)
+
+    -- landlord migration (execute step-by-step for compatibility)
+    local colRow = MySQL.single.await([[SELECT COUNT(*) as c FROM INFORMATION_SCHEMA.COLUMNS 
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'properties' AND COLUMN_NAME = 'landlord_cid']])
+    local hasColumn = (colRow and (colRow.c or colRow['COUNT(*)'])) or 0
+    if hasColumn == 0 then
+        MySQL.query.await("ALTER TABLE `properties` ADD COLUMN `landlord_cid` VARCHAR(50) NULL")
+    end
+
+    -- add foreign key if missing
+    local fkRow = MySQL.single.await([[SELECT COUNT(*) as c FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+        WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'properties' AND COLUMN_NAME = 'landlord_cid' AND REFERENCED_TABLE_NAME = 'players']])
+    local hasFk = (fkRow and (fkRow.c or fkRow['COUNT(*)'])) or 0
+    if hasFk == 0 then
+        local ok = pcall(function()
+            MySQL.query.await([[ALTER TABLE `properties` 
+                ADD CONSTRAINT `fk_properties_landlord` FOREIGN KEY (`landlord_cid`) REFERENCES `players` (`citizenid`) ON DELETE SET NULL]])
+        end)
+    end
+
+    -- add index if missing
+    local idxRow = MySQL.single.await([[SELECT COUNT(*) as c FROM INFORMATION_SCHEMA.STATISTICS 
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'properties' AND INDEX_NAME = 'idx_properties_landlord']])
+    local hasIdx = (idxRow and (idxRow.c or idxRow['COUNT(*)'])) or 0
+    if hasIdx == 0 then
+        local _ = pcall(function()
+            MySQL.query.await("CREATE INDEX `idx_properties_landlord` ON `properties` (`landlord_cid`)")
+        end)
+    end
+
+    -- backfill landlord for existing owned properties
+    MySQL.update.await("UPDATE `properties` SET `landlord_cid` = `owner` WHERE `landlord_cid` IS NULL AND `owner` IS NOT NULL")
 
     local properties = MySQL.query.await('SELECT id FROM properties WHERE owner IS NOT NULL AND rent_interval IS NOT NULL')
     for i = 1, #properties do

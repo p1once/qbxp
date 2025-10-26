@@ -80,22 +80,7 @@ local function safeIsPhoneVisible()
     return result == true
 end
 
-CreateThread(function()
-    while true do
-        if not safeIsPhoneVisible() then
-            Wait(200)
-        else
-            Wait(0)
-            local backKeyPressed = IsControlJustPressed(0, 177) or IsControlJustPressed(0, 202)
-                or IsControlJustReleased(0, 177) or IsControlJustReleased(0, 202)
-                or IsDisabledControlJustPressed(0, 177) or IsDisabledControlJustPressed(0, 202)
-                or IsDisabledControlJustReleased(0, 177) or IsDisabledControlJustReleased(0, 202)
-
-            if backKeyPressed then
-                pcall(function()
-                    exports.npwd:setPhoneVisible(false)
-                end)
-            end
-        end
-    end
-end)
+-- Do not force-close the phone on back/cancel keys.
+-- NPWD handles in-app back navigation internally, and the toggle key/command
+-- controls opening/closing. Forcing a close here interferes with navigation
+-- (e.g., back not working and the phone closing unexpectedly).

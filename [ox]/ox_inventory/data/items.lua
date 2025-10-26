@@ -710,4 +710,17 @@ return {
         }
     },
 
+    -- Real Estate tablet (job item)
+    ['realestate_tablet'] = {
+        label = 'Tablette Immobilier',
+        weight = 100,
+        stack = false,
+        close = true,
+        -- Do NOT set consume for this item so ox_inventory falls back
+        -- to qbx_core usable item callback (CreateUseableItem).
+        client = {
+            image = 'tablet.png',
+        }
+    },
+
 }
