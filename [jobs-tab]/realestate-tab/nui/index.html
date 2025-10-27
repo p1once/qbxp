@@ -102,7 +102,7 @@
                             </table>
 <div class='empty' v-if='List.items.length===0'>Aucun bien ne correspond aux filtres.</div>
                             <div class='pagination'>
-                                <button class='btn secondary' :disabled='List.offset<=0' @click='List.offset=Math.max(0,List.offset-List.limit); refreshList()'>PrÃ©c.</button>
+                                <button class='btn secondary' :disabled='List.offset<=0' @click='List.offset=Math.max(0,List.offset-List.limit); refreshList()'>Prèc.</button>
                                 <span>{{List.offset+1}} - {{Math.min(List.offset+List.limit, List.total)}} / {{List.total}}</span>
                                 <button class='btn secondary' :disabled='List.offset+List.limit>=List.total' @click='List.offset=List.offset+List.limit; refreshList()'>Suiv.</button>
                             </div>
@@ -111,9 +111,9 @@
                             <button class='icon-btn close' @click='closeManage()' title='Fermer'>
                                 <i class='fas fa-times'></i>
                             </button>
-                            <h2>GÃ©rer #{{Selected.id}} - {{Selected.property_name}}</h2>
+                            <h2>Gérer #{{Selected.id}} - {{Selected.property_name}}</h2>
                             <div class='group'>
-                                <h3>Ã‰dition</h3>
+                                <h3>Edition</h3>
                                 <div class='form'>
                                     <div class='field'>
                                         <label>Nom</label>
@@ -146,7 +146,7 @@
                                     </div>
                                 </div>
                                 <div class='row mt-2'>
-                                    <button class='btn secondary' @click='transferTitle()'>TransfÃ©rer le titre</button>
+                                    <button class='btn secondary' @click='transferTitle()'>Transférer le titre</button>
                                 </div>
                             </div>
                             <div class='danger-zone'>
@@ -160,9 +160,9 @@
 
                 <div class='page' id='operations' v-if='currentPage == "operations"'>
                     <div class='content'>
-                        <h1>OpÃ©rations</h1>
+                        <h1>Opérations</h1>
                         <div class='row mt-2'>
-                            <button class='btn' @click='createProperty()'>CrÃ©er un bien</button>
+                            <button class='btn' @click='createProperty()'>Créer un bien</button>
                             <select class='select' v-model='SearchId'>
                                 <option value='' disabled>Choisir un bien</option>
                                 <option v-for='opt in NameList.items' :key='opt.id' :value='opt.id'>{{ opt.name }} (#{{opt.id}})</option>
@@ -180,8 +180,8 @@
                             <div class='section-header'>
                                 <i class='fas fa-file-signature'></i>
                                 <div>
-                                    <h3>CrÃ©er un contrat</h3>
-                                    <p class='hint'>SÃ©lectionne un bien puis le client cible (CitizenID).</p>
+                                    <h3>Créer un contrat</h3>
+                                    <p class='hint'>Sélectionne un bien puis le client cible (CitizenID).</p>
                                 </div>
                                 <div class='pill' v-if='Contract.id'>{{ nameOf(Contract.id) }}</div>
                             </div>
@@ -209,7 +209,7 @@
                                 <i class='fas fa-user-slash'></i>
                                 <div>
                                     <h3>Gestion occupant</h3>
-                                    <p class='hint'>Ã‰vincer l'occupant actuel d'un bien (action sensible).</p>
+                                    <p class='hint'>Évincer l'occupant actuel d'un bien (action sensible).</p>
                                 </div>
                                 <div class='pill' v-if='EvictId'>{{ nameOf(EvictId) }}</div>
                             </div>
@@ -222,7 +222,7 @@
                                     </select>
                                 </div>
                                 <div class='actions'>
-                                    <button class='btn danger' @click='evict()'><i class='fas fa-exclamation-triangle' style='margin-right:6px;'></i>Ã‰vincer l'occupant</button>
+                                    <button class='btn danger' @click='evict()'><i class='fas fa-exclamation-triangle' style='margin-right:6px;'></i>Évincer l'occupant</button>
                                 </div>
                             </div>
                         </div>
@@ -231,8 +231,8 @@
                             <div class='section-header'>
                                 <i class='fas fa-door-open'></i>
                                 <div>
-                                    <h3>Visite guidÃ©e</h3>
-                                    <p class='hint'>DÃ©marre une visite du bien avec un client.</p>
+                                    <h3>Visite guidée</h3>
+                                    <p class='hint'>Démarre une visite du bien avec un client.</p>
                                 </div>
                                 <div class='pill' v-if='Visit.id'>{{ nameOf(Visit.id) }}</div>
                             </div>
@@ -249,7 +249,7 @@
                                     <input class='input' v-model='Visit.target' placeholder='CitizenID client (optionnel)' />
                                 </div>
                                 <div class='actions'>
-                                    <button class='btn secondary' @click='startVisit()'><i class='fas fa-play' style='margin-right:6px;'></i>DÃ©marrer une visite</button>
+                                    <button class='btn secondary' @click='startVisit()'><i class='fas fa-play' style='margin-right:6px;'></i>Démarrer une visite</button>
                                 </div>
                             </div>
                         </div>
