@@ -37,18 +37,20 @@ local function ToggleTablet(state)
     if state then
         LoadDict(anim)
 
-        if not object then
+        if not object or not DoesEntityExist(object) then
             LoadProp(prop)
 
             local coords = GetEntityCoords(ped)
             local hand = GetPedBoneIndex(ped, bone)
 
-            object = CreateObject(GetHashKey(prop), coords, 1, 1, 1)
-            AttachEntityToEntity(object, ped, hand, 0.0, 0.0, 0.03, 0.0, 0.0, 0.0, 1, 1, 0, 1, 0, 1)
+            object = CreateObject(GetHashKey(prop), coords.x, coords.y, coords.z, true, false, false)
+            -- Offsets/rotations adaptés pour rendre la tablette visible dans la main droite
+            -- Position (x, y, z) et Rotation (pitch, roll, yaw)
+            AttachEntityToEntity(object, ped, hand, 0.03, 0.02, -0.02, 10.0, 160.0, 0.0, true, true, false, true, 1, true)
         end
 
         if not IsEntityPlayingAnim(ped, anim, 'base', 3) then
-            TaskPlayAnim(ped, anim, 'base', 8.0, 1.0, -1, 49, 1.0, 0, 0, 0)
+            TaskPlayAnim(ped, anim, 'base', 8.0, 1.0, -1, 49, 1.0, false, false, false)
         end
 
         SetNuiFocus(state, state)
@@ -56,8 +58,11 @@ local function ToggleTablet(state)
             action = 'open' 
         })
     else
-        DeleteEntity(object)
-        DetachEntity(object, 1, 1)
+        if object and DoesEntityExist(object) then
+            DetachEntity(object, true, true)
+            DeleteEntity(object)
+            object = nil
+        end
         ClearPedTasks(ped)
 
         SetNuiFocus(state, state)

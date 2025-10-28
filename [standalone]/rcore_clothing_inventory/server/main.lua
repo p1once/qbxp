@@ -92,6 +92,34 @@ RegisterNetEvent('rcore_clothing_inventory:addClothingItems', function(items)
         return
     end
 
+    -- Safety: if the player is a brand new character (no saved skin/outfit), do not
+    -- automatically add clothing items that may have been applied by the char-creator.
+    -- Use rcore_clothing's export `getSkinByIdentifier` when available to detect saved outfits.
+    local ok, hasSavedSkin = pcall(function()
+        if exports and exports.rcore_clothing and exports.rcore_clothing.getSkinByIdentifier then
+            local identifier
+            -- Try framework-specific identifier helper if available, else fallback to license2
+            if GetPlayerFwIdentifier then
+                identifier = GetPlayerFwIdentifier(src)
+            else
+                identifier = GetPlayerIdentifierByType(src, 'license2') or GetPlayerIdentifierByType(src, 'license')
+            end
+
+            if identifier then
+                local skin = exports.rcore_clothing:getSkinByIdentifier(identifier)
+                -- getSkinByIdentifier returns an empty table if no saved outfits
+                return type(skin) == 'table' and next(skin) ~= nil
+            end
+        end
+        return true -- if we can't determine, allow adding to preserve existing behaviour
+    end)
+
+    -- if we successfully determined and the player has no saved outfit, skip adding
+    if ok and not hasSavedSkin then
+        print(('[rcore_clothing_inventory] Skipping adding clothing items for new player %s (no saved outfit)'):format(src))
+        return
+    end
+
     for _, item in ipairs(items) do
         local metadata = buildMetadataFromPurchase(item)
 
